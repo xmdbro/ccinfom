@@ -2,67 +2,126 @@ CREATE SCHEMA pet_show;
 
 USE pet_show;
 
-#EVENTS TABLE CREATION
-CREATE TABLE events (eventID INT NOT NULL, 
-					name VARCHAR(20) NOT NULL, 
-                    date DATE, 
-                    time TIME, 
-                    location VARCHAR(100) NOT NULL, 
-                    maxParticipants INT, 
-                    registrationDeadline DATE, 
-                    eventType VARCHAR(100), 
-                    distanceInKM DECIMAL(4, 2), 
-                    timeLimit INT, 
-                    breedCategory VARCHAR(50), 
-                    status BOOLEAN,
-                    CONSTRAINT primary_event_key PRIMARY KEY(eventID));
-                    
-#PET OWNER TABLE CREATION
-CREATE TABLE pet_owner (participantID INT NOT NULL, 
-					   firstName VARCHAR(20) NOT NULL,
-                       lastName VARCHAR(20) NOT NULL, 
-                       email VARCHAR(20), 
-                       number INT NOT NULL, 
-                       totalPets INT,
-                       CONSTRAINT primary_par_key PRIMARY KEY(participantID));
-                       
-#PET RECORD TABLE CREATION
-CREATE TABLE pet_record (petID INT NOT NULL, 
-						 participantID INT NOT NULL, 
-                         name VARCHAR(20) NOT NULL, 
-                         breed VARCHAR(30), 
-                         age INT, 
-                         sex VARCHAR(4), 
-                         weightInKg DECIMAL(6,2), 
-                         muzzleRequired BOOLEAN, 
-                         notes TEXT, 
-                         CONSTRAINT primary_pet_key PRIMARY KEY(petID),
-                         CONSTRAINT pet_foreign_owner_key FOREIGN KEY(participantID) REFERENCES pet_owner(participantID));
-                         
-#AWARDS AND TITLES TABLE CREATION
-CREATE TABLE awrd_title (awardID INT NOT NULL, 
-						 petID INT NOT NULL, 
-                         type VARCHAR(100), 
-                         description TEXT, 
-                         date DATE, 
-                         eventID INT NOT NULL,
-                         CONSTRAINT primary_awrd_key PRIMARY KEY (awardID),
-                         CONSTRAINT awrd_foreign_pet_key FOREIGN KEY (petID) REFERENCES pet_record(petID),
-                         CONSTRAINT awrd_foreign_event_key FOREIGN KEY(eventID) REFERENCES events(eventID));
-                         
-#PARTICIPANTS-EVENTS JUNCTION TABLE CREATION
-CREATE TABLE participant_event (participantID INT NOT NULL,
-								eventID INT NOT NULL,
-								registrationDate DATE NOT NULL,
-								CONSTRAINT primary_par_event_key PRIMARY KEY (participantID, eventID),
-								CONSTRAINT par_event_foreign_participant_key FOREIGN KEY (participantID) REFERENCES pet_owner(participantID),
-								CONSTRAINT par_event_foreign_event_key FOREIGN KEY (eventID) REFERENCES events(eventID));
-#PETS-EVENTS JUNCTION TABLE CREATION
-CREATE TABLE pet_event (petID INT NOT NULL,
-						eventID INT NOT NULL,
-						attendanceStatus VARCHAR(10) CHECK (attendanceStatus IN ('Present', 'Absent', 'Registered')),
-						-- (time, score, rank)
-						petResult DECIMAL(5, 2), 
-						CONSTRAINT primary_pet_event_key PRIMARY KEY (petID, eventID),
-						CONSTRAINT pet_event_foreign_pet_key FOREIGN KEY (petID) REFERENCES pet_record(petID),
-						CONSTRAINT pet_event_foreign_event_key FOREIGN KEY (eventID) REFERENCES events(eventID));
+CREATE TABLE owners (
+    owner_id INT NOT NULL,
+    first_name VARCHAR(20) NOT NULL,
+    last_name VARCHAR(20) NOT NULL,
+    email VARCHAR(50),
+    contact_number INT,
+    CONSTRAINT primary_owner_key PRIMARY KEY(owner_id)
+);
+
+CREATE TABLE size_category (
+    size_id INT NOT NULL,
+    size_name VARCHAR(10) NOT NULL,
+    CONSTRAINT primary_siz_cat_key PRIMARY KEY (size_id)
+);
+
+CREATE TABLE breeds (
+    breed_id INT NOT NULL,
+    breed_name VARCHAR(50) NOT NULL,
+    size_id INT NOT NULL,
+    CONSTRAINT primary_breed_key PRIMARY KEY (breed_id),
+    CONSTRAINT fk_breed_size_key FOREIGN KEY(size_id) REFERENCES size_category(size_id)
+);
+
+CREATE TABLE events (
+    event_id INT NOT NULL,
+    name VARCHAR(20) NOT NULL,
+    date DATE NOT NULL,
+    time TIME NOT NULL,
+    location VARCHAR(100) NOT NULL,
+    max_participants INT NOT NULL,
+    registration_deadline DATE NOT NULL,
+    type VARCHAR(100) NOT NULL,
+    distance_km DECIMAL(4, 2),
+    time_limit INT,
+    status TINYINT(1) NOT NULL,
+    base_registration_fee DECIMAL(6,2) NOT NULL,
+    extra_pet_discount DECIMAL(6,2) NOT NULL,
+    CONSTRAINT primary_event_key PRIMARY KEY(event_id)
+);
+
+CREATE TABLE pets (
+    pet_id INT NOT NULL,
+    owner_id INT NOT NULL,
+    name VARCHAR(20) NOT NULL,
+    actual_size_id INT NOT NULL,
+    age INT NOT NULL,
+    sex VARCHAR(4) NOT NULL,
+    weight_kg DECIMAL(6,2) NOT NULL,
+    muzzle_required TINYINT(1) NOT NULL,
+    notes TEXT,
+    CONSTRAINT primary_pet_key PRIMARY KEY(pet_id),
+    CONSTRAINT fk_pet_owner_key FOREIGN KEY(owner_id) REFERENCES owners(owner_id),
+    CONSTRAINT fk_pet_size_key FOREIGN KEY (actual_size_id) REFERENCES size_category(size_id)
+);
+
+CREATE TABLE awards (
+    award_id INT NOT NULL,
+    pet_id INT NOT NULL,
+    type VARCHAR(100) NOT NULL,
+    description TEXT,
+    date DATE NOT NULL,
+    event_id INT NOT NULL,
+    CONSTRAINT primary_awrd_key PRIMARY KEY (award_id),
+    CONSTRAINT fk_awrd_pet_key FOREIGN KEY (pet_id) REFERENCES pets(pet_id),
+    CONSTRAINT fk_awrd_event_key FOREIGN KEY(event_id) REFERENCES events(event_id)
+);
+
+CREATE TABLE pet_breed_junction (
+    pet_id INT NOT NULL,
+    breed_id INT NOT NULL,
+    CONSTRAINT primary_pet_breed_key PRIMARY KEY (pet_id, breed_id), 
+    CONSTRAINT fk_pbj_pet_key FOREIGN KEY (pet_id) REFERENCES pets(pet_id),
+    CONSTRAINT fk_pbj_breed_key FOREIGN KEY (breed_id) REFERENCES breeds(breed_id)
+);
+
+CREATE TABLE event_registration (
+    registration_id INT NOT NULL,
+    owner_id INT NOT NULL,
+    event_id INT NOT NULL,
+    registration_date DATE NOT NULL, 
+    total_amount_paid DECIMAL(6,2) NOT NULL,
+    payment_date DATE NOT NULL, 
+    payment_time TIME NOT NULL, 
+    status VARCHAR(20) NOT NULL, 
+    transfer_destination INT,
+    cancellation_date DATE, 
+    
+    CONSTRAINT primary_reg_key PRIMARY KEY (registration_id),
+    CONSTRAINT fk_reg_owner_key FOREIGN KEY (owner_id) REFERENCES owners(owner_id),
+    CONSTRAINT fk_reg_event_key FOREIGN KEY (event_id) REFERENCES events(event_id),
+    CONSTRAINT fk_reg_transfer_key FOREIGN KEY (transfer_destination) REFERENCES event_registration(registration_id)
+);
+
+CREATE TABLE pet_event_entry (
+    entry_id INT NOT NULL,
+    registration_id INT NOT NULL,
+    pet_id INT NOT NULL,
+    event_id INT NOT NULL,
+    attendance_status VARCHAR(10) NOT NULL,
+    pet_result DECIMAL(6,2),
+    CONSTRAINT primary_entry_key PRIMARY KEY (entry_id),
+    CONSTRAINT fk_entry_reg_key FOREIGN KEY (registration_id) REFERENCES event_registration(registration_id),
+    CONSTRAINT fk_entry_pet_key FOREIGN KEY (pet_id) REFERENCES pets(pet_id),
+    CONSTRAINT fk_entry_event_key FOREIGN KEY (event_id) REFERENCES events(event_id),
+    CONSTRAINT unique_pet_event UNIQUE (pet_id, event_id)
+);
+
+CREATE TABLE participation_log (
+    log_id INT NOT NULL,
+    registration_id INT NOT NULL,
+    action_type VARCHAR(20) NOT NULL,
+    action_date DATE NOT NULL,
+    action_time TIME NOT NULL,
+    original_event_id INT NOT NULL,
+    new_event_id INT,
+    reason TEXT,
+    refund_amount DECIMAL(6, 2),
+    top_up_amount DECIMAL(6, 2),
+    CONSTRAINT primary_log_key PRIMARY KEY (log_id),
+    CONSTRAINT fk_log_reg_key FOREIGN KEY (registration_id) REFERENCES event_registration(registration_id),
+    CONSTRAINT fk_log_orig_event_key FOREIGN KEY (original_event_id) REFERENCES events(event_id),
+    CONSTRAINT fk_log_new_event_key FOREIGN KEY (new_event_id) REFERENCES events(event_id)
+);
