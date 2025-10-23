@@ -39,7 +39,14 @@ CREATE TABLE events (
     status TINYINT(1) NOT NULL,
     base_registration_fee DECIMAL(6,2) NOT NULL,
     extra_pet_discount DECIMAL(6,2) NOT NULL,
-    CONSTRAINT primary_event_key PRIMARY KEY(event_id)
+    min_weight DECIMAL(5, 2),
+    max_weight DECIMAL(5, 2),
+    min_size_id INT,
+    max_size_id INT,
+    
+    CONSTRAINT primary_event_key PRIMARY KEY(event_id),
+    CONSTRAINT fk_event_min_size_key FOREIGN KEY (min_size_id) REFERENCES size_category(size_id),
+    CONSTRAINT fk_event_max_size_key FOREIGN KEY (max_size_id) REFERENCES size_category(size_id)
 );
 
 CREATE TABLE pets (
