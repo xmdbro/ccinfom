@@ -30,3 +30,33 @@ VALUES ([registration_id], [pet_id], [event_id], 'Registered');
 UPDATE events
 SET max_participants = max_participants - 1
 WHERE event_id = [event_id];
+
+
+
+
+
+-- 4.4. Track participant and/or pet withdrawal in event/s will involve the following data & operations:
+START TRANSACTION;
+
+-- a. Reading the records of the pet_event_entry table to identify the entry of the pet withdrawing from an event.
+SELECT entry_id, registration_id
+FROM pet_event_entry
+WHERE pet_id = [pet_id] AND event_id = [event_id];
+
+-- b. Updating the pet_event_entry record to mark the status as "Withdrawn."
+UPDATEpet_event_entry
+SET attendance_status = 'Withdrawn'
+WHERE entry_id = [entry_id];
+
+-- c. Updating the associated event_registration record to set "Withdrawn" status and cancellation date if there are no other active pets.
+UPDATE event_registration
+SET status = 'Withdrawn', cancellation_date = CURDATE()
+WHERE registration_id = [registration_id] AND 0 = (SELECT COUNT(entry_id)
+                                        		       FROM pet_event_entry
+                                        		       WHERE registration_id = [registration_id] AND attendance_status NOT IN ('Withdrawn', 'Absent'));
+
+-- d. Recording the withdrawal activity in participation_log table.
+INSERT INTO participation_log (registration_id, action_type, action_date, action_time,  original_event_id, reason, refund_amount)
+VALUES ([registration_id],'WITHDRAWAL', CURDATE(), CURTIME(), [event_id], [reason], [refund_amount]);
+
+COMMIT;
