@@ -62,13 +62,13 @@ VALUES ([registration_id],'WITHDRAWAL', CURDATE(), CURTIME(), [event_id], [reaso
 COMMIT;
 
 -- 4.5. Tracking pet attendance in an event will involve the following data & operations:
--- a. Reading the records of the pet_event_entry table to get the list of registered pets for an eventID.
+-- a. Reading the records of the pet_event_entry table to get the list of an event's registered pets whose status is yet to be updated.
 SELECT pee.entry_id, pee.pet_id, p.name pet_name, pee.attendance_status current_status
 FROM pet_event_entry pee
 JOIN pets p ON pee.pet_id = p.pet_id
-WHERE pee.event_id = [event_id] AND pee.attendance_status NOT IN ('Withdrawn', 'Present', 'Absent'); -- (initial value can be 'Pending')
+WHERE pee.event_id = [event_id] AND pee.attendance_status NOT IN ('Withdrawn', 'Present', 'Absent'); -- (initial value can be 'Registered' or 'Pending')
 
--- b. Updating the Pets-Events Junction record to mark the attendanceStatus (e.g., present or absent) for each pet.
+-- b. Updating the pet_event_entry record to mark the attendance_status (e.g., present or absent) for each pet.
 -- Present
 UPDATE pet_event_entry
 SET attendance_status = 'Present'
