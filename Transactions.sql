@@ -60,3 +60,20 @@ INSERT INTO participation_log (registration_id, action_type, action_date, action
 VALUES ([registration_id],'WITHDRAWAL', CURDATE(), CURTIME(), [event_id], [reason], [refund_amount]);
 
 COMMIT;
+
+-- 4.5. Track participant and pet attendance in an event will involve the following data & operations:
+-- a. Reading the records of the pet_event_entry table to get the list of registered pets for an eventID.
+SELECT pee.entry_id, pee.pet_id, p.name pet_name, pee.attendance_status current_status
+FROM pet_event_entry pee
+JOIN pets p ON pee.pet_id = p.pet_id
+WHERE pee.event_id = [event_id] AND pee.attendance_status NOT IN ('Withdrawn', 'Present', 'Absent'); -- (initial value can be 'Pending')
+
+-- b. Updating the Pets-Events Junction record to mark the attendanceStatus (e.g., present or absent) for each pet.
+-- Present
+UPDATE pet_event_entry
+SET attendance_status = 'Present'
+WHERE entry_id = [entry_id];
+-- Absent
+UPDATE pet_event_entry
+SET attendance_status = 'Absent'
+WHERE entry_id = [entry_id];
