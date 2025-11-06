@@ -31,9 +31,42 @@ UPDATE events
 SET max_participants = max_participants - 1
 WHERE event_id = [event_id];
 
+-- 4.2. Assign awards to pets after each event will involve the following data & operations:
+START TRANSACTION;
 
+-- a. Reading the records of the Pet Record and Events to verify the details.
+SELECT p.pet_id, p.name AS pet_name, e.event_id, e.name AS event_name, e.date AS event_date
+FROM pets p
+JOIN pet_event_entry pee ON p.pet_id = pee.pet_id
+JOIN events e ON pee.event_id = e.event_id
+WHERE e.event_id = [event_id]
+  AND pee.attendance_status = 'Present';
 
+-- b. Reading the results of the event to determine the award recipients.
+SELECT pee.pet_id, p.name AS pet_name, pee.pet_result
+FROM pet_event_entry pee
+JOIN pets p ON pee.pet_id = p.pet_id
+WHERE pee.event_id = [event_id]
+ORDER BY pee.pet_result DESC -- basically highest scorers(?)
+LIMIT [num_winners] -- to get top x or best in x
 
+-- c. Recording a new entry in the Awards and titles table with the awardID, petID, description, date, and eventID.
+INSERT INTO awards (awardID, petID, description, date, eventID)
+VALUES ([award_id], [petID], [description], CURDATE(), [eventID])
+
+-- OPTIONAL: since there is no log for pets who have received awards, update the notes of the pets(?)
+UPDATE pets
+SET notes = CONCAT(
+  IFNULL(notes, ''),
+  'Awarded: ', [award_type],
+  ' - ', [description],
+  ' (Event: ', [event_name],
+  ', Date:', CURDATE(),
+  ')'
+)
+WHERE pet_id = [pet_id];
+
+COMMIT;
 
 -- 4.4. Tracking participant and/or pet withdrawal in an event will involve the following data & operations:
 START TRANSACTION;
