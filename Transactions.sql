@@ -35,7 +35,7 @@ WHERE event_id = [event_id];
 
 
 
--- 4.4. Track participant and/or pet withdrawal in event/s will involve the following data & operations:
+-- 4.4. Tracking participant and/or pet withdrawal in an event will involve the following data & operations:
 START TRANSACTION;
 
 -- a. Reading the records of the pet_event_entry table to identify the entry of the pet withdrawing from an event.
@@ -44,7 +44,7 @@ FROM pet_event_entry
 WHERE pet_id = [pet_id] AND event_id = [event_id];
 
 -- b. Updating the pet_event_entry record to mark the status as "Withdrawn."
-UPDATEpet_event_entry
+UPDATE pet_event_entry
 SET attendance_status = 'Withdrawn'
 WHERE entry_id = [entry_id];
 
@@ -61,7 +61,7 @@ VALUES ([registration_id],'WITHDRAWAL', CURDATE(), CURTIME(), [event_id], [reaso
 
 COMMIT;
 
--- 4.5. Track participant and pet attendance in an event will involve the following data & operations:
+-- 4.5. Tracking pet attendance in an event will involve the following data & operations:
 -- a. Reading the records of the pet_event_entry table to get the list of registered pets for an eventID.
 SELECT pee.entry_id, pee.pet_id, p.name pet_name, pee.attendance_status current_status
 FROM pet_event_entry pee
