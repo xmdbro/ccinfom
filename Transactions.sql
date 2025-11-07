@@ -10,26 +10,35 @@ FROM pets
 WHERE pet_id = [pet_id] AND owner_id = [owner_id];
 
 -- b. Reading the Events record to check for available spots in the selected event.
-SELECT event_id, name, date, max_participants, COUNT(pe.entry_id) AS current_participants
+SELECT e.event_id, e.name, e.date, e.max_participants,
+       COUNT(DISTINCT r.registration_id) AS current_participants
 FROM events e
-LEFT JOIN pet_event_entry pe ON e.event_id = pe.event_id
+LEFT JOIN event_registration r
+  ON r.event_id = e.event_id
+ AND r.status IN ('Registered','Paid')   -- adjust active statuses if needed
 WHERE e.event_id = [event_id]
-GROUP BY e.event_id
-HAVING COUNT(pe.entry_id) < e.max_participants;
-
+GROUP BY e.event_id, e.name, e.date, e.max_participants
+HAVING COUNT(DISTINCT r.registration_id) < e.max_participants;
 
 -- c. Recording the new registration in the Participants-Events Junction table with the participantID, eventID, and registrationDate.
-INSERT INTO event_registration (owner_id, event_id, registration_date, total_amount_paid, payment_date, payment_time, status)
-VALUES ([owner_id], [event_id], [registration_date], [total_amount_paid], [payment_date], [payment_time], 'Registered');
+INSERT INTO event_registration
+  (registration_id, owner_id, event_id, registration_date,
+   total_amount_paid, payment_date, payment_time, status,
+   transfer_destination, cancellation_date)
+VALUES
+  ([registration_id], [owner_id], [event_id], [registration_date],
+   [total_amount_paid], [payment_date], [payment_time], 'Registered',
+   NULL, NULL);
 
 -- d. Recording the pet's entry in the Pets-Events Junction table with the petID, eventID.
-INSERT INTO pet_event_entry (registration_id, pet_id, event_id, attendance_status)
-VALUES ([registration_id], [pet_id], [event_id], 'Registered');
+INSERT INTO pet_event_entry
+  (entry_id, registration_id, pet_id, event_id, attendance_status, pet_result)
+VALUES
+  ([entry_id], [registration_id], [pet_id], [event_id], 'Registered', NULL);
 
 -- e. Updating the Events record to increase the participant count for that specific event
-UPDATE events
-SET max_participants = max_participants - 1
-WHERE event_id = [event_id];
+-- No update to events needed. max_participants is a fixed capacity; availability is derived by counting
+-- active registrations (or pet entries). Do NOT decrement max_participants.
 
 -- 4.2. Assign awards to pets after each event will involve the following data & operations:
 START TRANSACTION;
