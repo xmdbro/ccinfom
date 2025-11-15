@@ -73,7 +73,7 @@ CREATE TABLE events (
     type VARCHAR(100) NOT NULL,
     distance_km DECIMAL(5,2),
     time_limit INT,
-    status TINYINT(1) NOT NULL,
+    status TINYINT(1) NOT NULL, -- 1 = open, 0 = closed
     base_registration_fee DECIMAL(8,2) NOT NULL,
     extra_pet_discount DECIMAL(8,2) NOT NULL,
     min_weight DECIMAL(6,2),
@@ -148,31 +148,31 @@ CREATE TABLE pet_breed_junction (
 );
 
 INSERT INTO pet_breed_junction (pet_id, breed_id) VALUES
-(1, 6),
-(2, 14),
-(3, 14),
-(4, 1),
-(5, 6),
-(6, 4),
-(7, 9),
-(8, 5),
-(9, 1),
-(10, 9),
-(11, 8),
-(12, 2),
-(13, 10),
-(14, 6),
-(15, 8),
-(16, 11),
-(17, 13),
-(18, 12),
-(19, 13),
-(20, 1),
-(21, 5),
-(22, 7),
-(23, 4),
-(24, 2),
-(25, 3);
+(1, 6),  -- Rico: Labrador
+(2, 14), -- Pip: Poodle (Miniature)
+(3, 14), -- Luna: Poodle (Miniature)
+(4, 1),  -- Mochi: Chihuahua
+(5, 6),  -- Max: Labrador
+(6, 4),  -- Bella: Beagle
+(7, 9),  -- Bruno: German Shepherd
+(8, 5),  -- Fiona: Bulldog (medium)
+(9, 1),  -- Milo: Chihuahua
+(10, 9), -- Nala: German Shepherd / mix
+(11, 8), -- Echo: Border Collie
+(12, 2), -- Coco: Pomeranian
+(13, 10),-- Thor: Great Dane
+(14, 6), -- Zeus: Labrador
+(15, 8), -- Daisy: Border Collie
+(16, 11),-- Ollie: Jack Russell Terrier
+(17, 13),-- Nibbles: Shih Tzu
+(18, 12),-- Gigi: French Bulldog
+(19, 13),-- Poppy: Shih Tzu
+(20, 1), -- Sprout: Chihuahua
+(21, 5), -- Rex: Bulldog
+(22, 7), -- Buddy: Golden Retriever
+(23, 4), -- Sunny: Beagle
+(24, 2), -- Biscuit: Pomeranian
+(25, 3); -- Gizmo: Dachshund
 
 CREATE TABLE event_registration (
     registration_id INT NOT NULL PRIMARY KEY,
@@ -224,26 +224,27 @@ CREATE TABLE pet_event_entry (
 );
 
 INSERT INTO pet_event_entry (entry_id, registration_id, pet_id, event_id, attendance_status, pet_result) VALUES
-(1, 1, 1, 1, 'Present', 8.7),
-(2, 2, 3, 4, 'Present', 9.3),
-(3, 3, 5, 2, 'Present', 9.8),
-(4, 4, 6, 10, 'Present', 8.9),
-(5, 5, 7, 8, 'Present', 9.4),
-(6, 6, 9, 9, 'Present', 8.2),
-(7, 7, 10, 1, 'Present', 8.6),
-(8, 8, 12, 11, 'Present', 9.7),
-(9, 9, 13, 8, 'No Show', 0.0),
-(10, 10, 15, 2, 'Present', 9.9),
-(11, 11, 16, 6, 'Present', 9.5),
-(12, 12, 18, 7, 'Present', 9.1),
-(13, 13, 19, 4, 'Present', 8.8),
-(14, 14, 21, 8, 'Present', 9.6),
-(15, 15, 22, 9, 'Present', 8.4),
-(16, 16, 2, 11, 'Present', 9.2),
-(17, 17, 24, 4, 'Present', 8.9),
-(18, 18, 5, 3, 'Present', 9.0),
-(19, 3, 8, 2, 'Present', 8.7),
-(20, 5, 23, 9, 'Present', 8.5);
+(1, 1, 1, 1, 'Present', 8.7),     -- Rico in Dog Fun Run
+(2, 2, 3, 4, 'Present', 9.3),     -- Luna in Costume Contest
+(3, 3, 5, 2, 'Present', 9.8),     -- Max in Agility
+(4, 4, 6, 10, 'Present', 8.9),    -- Bella in Frisbee
+(5, 5, 7, 8, 'Present', 9.4),     -- Bruno in Tug-of-War
+(6, 6, 9, 9, 'Present', 8.2),     -- Milo in Parade
+(7, 7, 10, 1, 'Present', 8.6),    -- Nala in Dog Fun Run
+(8, 8, 12, 11, 'Present', 9.7),   -- Coco in Photo Booth
+(9, 9, 13, 8, 'No Show', 0.0),    -- Thor registered for Tug but no-show
+(10, 10, 15, 2, 'Present', 9.9),  -- Daisy in Agility
+(11, 11, 16, 6, 'Present', 9.5),  -- Ollie in Fastest Fetch
+(12, 12, 18, 7, 'Present', 9.1),  -- Gigi in Talent Show
+(13, 13, 19, 4, 'Present', 8.8),  -- Poppy in Costume Contest
+(14, 14, 21, 8, 'Present', 9.6),  -- Rex in Tug-of-War
+(15, 15, 22, 9, 'Present', 8.4),  -- Buddy in Parade
+(16, 16, 2, 11, 'Present', 9.2),  -- Pip in Photo Booth
+(17, 17, 24, 4, 'Present', 8.9),  -- Biscuit in Costume Contest
+(18, 18, 5, 3, 'Present', 9.0),   -- Max now in Obedience Challenge
+(19, 3, 8, 2, 'Present', 8.7),    -- Fiona in Agility
+(20, 5, 23, 9, 'Present', 8.5);   -- Sunny in Parade
+-- just to note, numbers here are just averaged from 6 to 10, assuming that each event only has a rating of highest average score (1-10)
 
 CREATE TABLE awards (
     award_id INT NOT NULL PRIMARY KEY,
@@ -288,60 +289,34 @@ CREATE TABLE participation_log (
 
 INSERT INTO participation_log (log_id, registration_id, action_type, action_date, action_time, original_event_id, new_event_id, reason, refund_amount, top_up_amount) VALUES
 (1, 1, 'Modified', '2025-11-06', '09:00:00', 1, NULL, 'Updated emergency contact', 0.00, 0.00),
-(2, 3, 'Paid', '2025-11-07', '11:20:00', 2, NULL, 'Full payment received', 0.00, 0.00),
-(3, 4, 'Cancelled', '2025-11-10', '12:30:00', 10, NULL, 'Owner withdrew due to travel', 260.00, 0.00),
-(4, 5, 'Paid', '2025-11-08', '09:00:00', 8, NULL, 'Paid and confirmed', 0.00, 0.00),
-(5, 6, 'Paid', '2025-11-09', '08:30:00', 9, NULL, 'Paid and confirmed', 0.00, 0.00),
-(6, 7, 'Modified', '2025-11-09', '09:20:00', 1, NULL, 'Added another pet later', 0.00, 0.00),
-(7, 8, 'Paid', '2025-11-10', '10:05:00', 11, NULL, 'Payment done at cashier', 0.00, 0.00),
-(8, 9, 'No Show Logged', '2025-11-22', '16:00:00', 8, NULL, 'Dog did not attend tug-of-war', 0.00, 0.00),
-(9, 10, 'Transfer Requested', '2025-11-12', '09:55:00', 2, NULL, 'Owner asked to move to mini agility (pending)', 0.00, 0.00),
-(10, 11, 'Paid', '2025-11-11', '10:05:00', 6, NULL, '', 0.00, 0.00),
-(11, 12, 'Paid', '2025-11-12', '14:30:00', 7, NULL, '', 0.00, 0.00),
-(12, 14, 'Paid', '2025-11-13', '16:20:00', 8, NULL, '', 0.00, 0.00),
-(13, 15, 'Paid', '2025-11-13', '17:05:00', 9, NULL, '', 0.00, 0.00);
+(2, 2, 'Transferred', '2025-11-09', '10:00:00', 4, 11, 'Owner requested transfer to Photo Booth', 0.00, 0.00),
+(3, 3, 'Paid', '2025-11-07', '11:20:00', 2, NULL, 'Full payment received', 0.00, 0.00),
+(4, 4, 'Cancelled', '2025-11-10', '12:30:00', 10, NULL, 'Owner withdrew due to travel', 260.00, 0.00),
+(5, 5, 'Paid', '2025-11-08', '09:00:00', 8, NULL, 'Paid and confirmed', 0.00, 0.00),
+(6, 6, 'Paid', '2025-11-09', '08:30:00', 9, NULL, 'Paid and confirmed', 0.00, 0.00),
+(7, 7, 'Modified', '2025-11-09', '09:20:00', 1, NULL, 'Added another pet later', 0.00, 0.00),
+(8, 8, 'Paid', '2025-11-10', '10:05:00', 11, NULL, 'Payment done at cashier', 0.00, 0.00),
+(9, 9, 'No Show Logged', '2025-11-22', '16:00:00', 8, NULL, 'Dog did not attend tug-of-war', 0.00, 0.00),
+(10, 10, 'Transfer Requested', '2025-11-12', '09:55:00', 2, NULL, 'Owner asked to move to mini agility (pending)', 0.00, 0.00),
+(11, 11, 'Paid', '2025-11-11', '10:05:00', 6, NULL, '', 0.00, 0.00),
+(12, 12, 'Paid', '2025-11-12', '14:30:00', 7, NULL, '', 0.00, 0.00),
+(13, 13, 'Transferred', '2025-11-13', '15:30:00', 4, 2, 'Switched events to agility', 0.00, 200.00),
+(14, 14, 'Paid', '2025-11-13', '16:20:00', 8, NULL, '', 0.00, 0.00),
+(15, 15, 'Paid', '2025-11-13', '17:05:00', 9, NULL, '', 0.00, 0.00);
+
+-- SQL SCRIPT: Comprehensive View of Pet Show Entries with Awards and Log History
+-- This query links all ten tables in the pet_show schema to provide a full, descriptive view
+-- of every pet entry, including owner details, pet size/breed, event specifics,
+-- awards won, and a history of registration activity.
 
 USE pet_show;
 
-SELECT
-    CONCAT(O.first_name, ' ', O.last_name) AS OwnerName,
-    O.email AS OwnerEmail,
-    P.name AS PetName,
-    P.age AS PetAgeYears,
-    SC_Pet.size_name AS PetActualSize,
-    P.weight_kg AS PetWeight_kg,
-    GROUP_CONCAT(DISTINCT B.breed_name ORDER BY B.breed_name SEPARATOR ', ') AS PetBreeds,
-    E.name AS EventName,
-    E.type AS EventType,
-    DATE_FORMAT(E.date, '%Y-%m-%d') AS EventDate,
-    PEE.attendance_status AS EntryStatus,
-    PEE.pet_result AS PetResultScore,
-    GROUP_CONCAT(DISTINCT A.type ORDER BY A.award_id SEPARATOR ' | ') AS AwardsWonInEvent,
-    ER.registration_date AS RegDate,
-    ER.total_amount_paid AS TotalFeePaid,
-    ER.status AS RegistrationPaymentStatus,
-    GROUP_CONCAT(PL.action_type ORDER BY PL.log_id SEPARATOR ' -> ') AS RegistrationActivityLog
-FROM
-    pet_event_entry PEE
-JOIN
-    pets P ON PEE.pet_id = P.pet_id
-JOIN
-    owners O ON P.owner_id = O.owner_id
-JOIN
-    events E ON PEE.event_id = E.event_id
-JOIN
-    event_registration ER ON PEE.registration_id = ER.registration_id
-JOIN
-    size_category SC_Pet ON P.actual_size_id = SC_Pet.size_id
-LEFT JOIN
-    pet_breed_junction PBJ ON P.pet_id = PBJ.pet_id
-LEFT JOIN
-    breeds B ON PBJ.breed_id = B.breed_id
-LEFT JOIN
-    awards A ON PEE.pet_id = A.pet_id AND PEE.event_id = A.event_id
-LEFT JOIN
-    participation_log PL ON ER.registration_id = PL.registration_id
-GROUP BY
-    PEE.entry_id, O.owner_id, P.pet_id, E.event_id, ER.registration_id, SC_Pet.size_name
-ORDER BY
-    OwnerName, PetName, EventDate;
+SELECT *
+FROM owners
+ORDER BY owner_id DESC
+LIMIT 5;
+
+SELECT *
+FROM pets
+ORDER BY pet_id DESC
+LIMIT 5;
