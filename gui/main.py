@@ -10,7 +10,7 @@ DB_CONFIG = {
     'password': 'group2s14',     
     'database': 'pet_show'          
 }
-
+#YEYE
 def get_db_connection():
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
@@ -23,7 +23,7 @@ def get_db_connection():
 class RegisterScreen(QDialog):
     def __init__(self):
         super(RegisterScreen, self).__init__()
-        loadUi('registerscreen.ui', self)
+        loadUi('./gui/registerscreen.ui', self)
         self.regbutt.clicked.connect(self.gotoownerregistration)
 
     def gotoownerregistration(self):
@@ -36,7 +36,7 @@ class RegisterScreen(QDialog):
 class OwnerRegisScreen(QDialog):
     def __init__(self):
         super(OwnerRegisScreen, self).__init__()
-        loadUi('ownerregistration.ui', self)
+        loadUi('./gui/ownerregistration.ui', self)
         self.owregbutt.clicked.connect(self.registerfunc)
         
     def registerfunc(self):
@@ -94,7 +94,7 @@ class OwnerRegisScreen(QDialog):
 class mainmenu(QDialog):
     def __init__(self):
         super(mainmenu, self).__init__()
-        loadUi('mainmenu.ui', self)
+        loadUi('./gui/mainmenu.ui', self)
         self.petregbutt.clicked.connect(self.gotopetregis)
         self.petregbutt.clicked.connect(self.gotopetregis)
         self.eventregbutt.clicked.connect(self.gotoenrollev)
@@ -124,7 +124,7 @@ class mainmenu(QDialog):
 class petregistration(QDialog):
     def __init__(self):
         super(petregistration, self).__init__()
-        loadUi('petregistration.ui', self)
+        loadUi('./gui/petregistration.ui', self)
 
         self.petsex.addItems(['Male', 'Female', 'Unknown'])
         self.petsize.addItems(['Small', 'Medium', 'Large', 'Extra Large'])
@@ -233,7 +233,7 @@ class petregistration(QDialog):
 class petrgistrd(QDialog):
     def __init__(self):
         super(petrgistrd, self).__init__()
-        loadUi('petregistered!.ui', self)
+        loadUi('./gui/petregistered!.ui', self)
         self.sucpetregbackbutt.clicked.connect(self.gotommenu)
 
     def gotommenu(self):
@@ -246,7 +246,7 @@ class petrgistrd(QDialog):
 class enrollevent(QDialog):
     def __init__(self):
         super(enrollevent, self).__init__()
-        loadUi('enrollevent.ui', self)
+        loadUi('./gui/enrollevent.ui', self)
         self.enrollevexitbutt.clicked.connect(self.gotommenu)
         self.enrolevbutt.clicked.connect(self.gotoeventenroll)
     def enrollevnt(self):
@@ -280,7 +280,7 @@ class enrollevent(QDialog):
 class evenrolled(QDialog):
     def __init__(self):
         super(evenrolled, self).__init__()
-        loadUi('eventenrolled.ui', self)
+        loadUi('./gui/eventenrolled.ui', self)
         self.eventenrolledbutt.clicked.connect(self.gotommenu)
 
     def gotommenu(self):
@@ -293,7 +293,7 @@ class evenrolled(QDialog):
 class editinf(QDialog):
     def __init__(self):
         super(editinf, self).__init__()
-        loadUi('editinfo.ui', self)
+        loadUi('./gui/editinfo.ui', self)
         self.editexitbutt.clicked.connect(self.gotommenu)
         self.saveinfobutt.clicked.connect(self.gotoinfoedited)
     def saveinf(self):
@@ -327,7 +327,7 @@ class editinf(QDialog):
 class infoedited(QDialog):
     def __init__(self):
         super(infoedited, self).__init__()
-        loadUi('infoedited!.ui', self)
+        loadUi('./gui/infoedited!.ui', self)
         self.infoeditedbackbutt.clicked.connect(self.gotommenu)
 
     def gotommenu(self):
