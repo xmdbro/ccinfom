@@ -10,7 +10,6 @@ DB_CONFIG = {
     'password': 'group2s14',     
     'database': 'pet_show'          
 }
-#friend
 def get_db_connection():
     try:
         conn = mysql.connector.connect(**DB_CONFIG)
