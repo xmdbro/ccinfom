@@ -628,23 +628,51 @@ class petregistration(QDialog):
         self.petsex.addItems(['Male', 'Female', 'Unknown'])
         self.petsize.addItems(['Small', 'Medium', 'Large', 'Extra Large']) 
 
+        self.populate_breeds()
+
         self.petexitbutt.clicked.connect(self.gotommenu)
         self.petregisterbutt.clicked.connect(self.petregisfunc)
         self.petregiserr = self.findChild(QtWidgets.QLabel, 'petregiserr') 
         
+    def populate_breeds(self):
+        conn = get_db_connection()
+        if conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT breed_name FROM breeds ORDER BY breed_name")
+                breeds = cursor.fetchall()
+
+                for breed in breeds:
+                    self.petbreed.addItem(breed[0])
+
+            except Error as err:
+                print(f"Database Error (Populate Breeds): {err}")
+                if self.petregiserr:
+                    self.petregiserr.setText('Could not load breed list.')
+            except Exception as e:
+                print(f"Unexpected Error (Populate Breeds): {e}")
+            finally:
+                if conn:
+                    conn.close()    
+        else:
+            if self.petregiserr:
+                self.petregiserr.setText('DB connection failed. Cannot load breeds.')
+
     def petregisfunc(self):
         petname = self.petname.text().strip()
         petage = self.petage.value()
         petsex = self.petsex.currentText().strip()
         petweight = self.petweight.value()
         petsize_name = self.petsize.currentText().strip()
-        petbreed = self.petbreed.text().strip()
+        petbreed = self.petbreed.currentText().strip()
         petnotes = self.petnotes.toPlainText().strip()
 
-        self.petregiserr.setText('') 
+        if self.petregiserr:
+            self.petregiserr.setText('') 
 
         if not petname or petage == 0 or not petbreed:
-            self.petregiserr.setText('Please fill in Pet Name, Age (must be > 0), and Breed.')
+            if self.petregiserr:
+                self.petregiserr.setText('Please fill in Pet Name, Age (must be > 0), and Breed.')
             return
         
         muzzle_required = 1 if self.muzzleyes.isChecked() else 0 
@@ -661,7 +689,8 @@ class petregistration(QDialog):
                 current_owner_id = cursor.fetchone()[0]
                 
                 if current_owner_id is None:
-                    self.petregiserr.setText('Error: No owner found. Please register an owner first.')
+                    if self.petregiserr:
+                        self.petregiserr.setText('Error: No owner found. Please register an owner first.')
                     return
 
 
