@@ -77,6 +77,53 @@ WHERE pet_id = [pet_id];
 
 COMMIT;
 
+-- 4.3. Transfer participant or pet to another event will involve the following data & operations:
+START TRANSACTION;
+
+-- a. Reading the records of the Participants-Events Junction and Pets-Events Junction tables to find the existing registration and pet-event record.
+SELECT r.registration_id, r.owner_id, pee.entry_id, pee.pet_id, pee.event_id AS old_event_id
+FROM event_registration r
+JOIN pet_event_entry pee ON r.registration_id = pee.registration_id
+WHERE pee.pet_id = [pet_id] AND pee.event_id = [old_event_id];
+
+-- b. Reading the Events record to check for an available spot in the new event.
+SELECT e.event_id, e.name, e.date, e.max_participants, COUNT(DISTINCT r.registration_id) AS current_participants
+FROM events e
+LEFT JOIN event_registration r
+  ON r.event_id = e.event_id
+ AND r.status IN ('Registered', 'Paid')
+WHERE e.event_id = [new_event_id]
+GROUP BY e.event_id, e.name, e.date, e.max_participants
+HAVING COUNT(DISTINCT r.registration_id) < e.max_participants;
+
+-- c. Deleting the old records from the Participants-Events Junction and Pets-Events Junction tables.
+DELETE FROM pet_event_entry
+WHERE pet_id = [pet_id] AND event_id = [old_event_id];
+
+DELETE FROM event_registration
+WHERE registration_id = [registration_id] AND event_id = [old_event_id];
+
+-- d. Recording new entries in the Participants-Events Junction and Pets-Events Junction tables, linking the participant and pet to the new eventID.
+INSERT INTO event_registration (registration_id, owner_id, event_id, registration_date, total_amount_paid, payment_date, payment_time, status, transfer_destination, cancellation_date)
+VALUES ([new_registration_id], [owner_id], [new_event_id], CURDATE(), [total_amount_paid], CURDATE(), CURTIME(), 'Transferred', NULL, NULL);
+
+INSERT INTO pet_event_entry (entry_id, registration_id, pet_id, event_id, attendance_status, pet_result)
+VALUES ([new_entry_id], [new_registration_id], [pet_id], [new_event_id], 'Transferred', NULL);
+
+-- e. Updating the Events records for both the old and new events to reflect the change in participant count.
+--    since there is no max_participants change due to it being a fixed number, update current participant count to account for availability.
+SELECT event_id, name, COUNT(DISTINCT registration_id) AS updated_participant_count
+FROM event_registration
+WHERE event_id IN ([old_event_id], [new_event_id]) 
+  AND status IN ('Registered', 'Paid', 'Transferred')
+GROUP BY event_id, name;
+
+-- f. Recording the transfer activity in the participation_log table.
+INSERT INTO participation_log (registration_id, action_type, action_date, action_time, original_event_id, new_event_id, reason, refund_amount, top_up_amount)
+VALUES ([registration_id], 'TRANSFER', CURDATE(), CURTIME(), [old_event_id], [new_event_id], [reason], [refund_amount], [top_up_amount]);
+
+COMMIT;
+
 -- 4.4. Tracking participant and/or pet withdrawal in an event will involve the following data & operations:
 START TRANSACTION;
 
