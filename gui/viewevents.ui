@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1246</width>
-    <height>759</height>
+    <height>796</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -35,7 +35,7 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>images/ownerregister2.png</pixmap>
+    <pixmap>images/viewevents.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -54,74 +54,47 @@
     </rect>
    </property>
   </widget>
-  <widget class="QLineEdit" name="owfirstname">
+  <widget class="QLabel" name="owerrormes">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>340</y>
-     <width>501</width>
-     <height>21</height>
+     <x>520</x>
+     <y>670</y>
+     <width>201</width>
+     <height>20</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Berlin Sans FB Demi</family>
-     <pointsize>14</pointsize>
+     <pointsize>10</pointsize>
+     <italic>false</italic>
      <bold>true</bold>
     </font>
    </property>
-   <property name="autoFillBackground">
-    <bool>false</bool>
+   <property name="layoutDirection">
+    <enum>Qt::LeftToRight</enum>
    </property>
    <property name="styleSheet">
-    <string notr="true">
-color: rgb(20, 33, 68);
-background-color: rgb(255, 255, 255);</string>
-   </property>
-   <property name="placeholderText">
-    <string>Required</string>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="owlastname">
-   <property name="geometry">
-    <rect>
-     <x>460</x>
-     <y>390</y>
-     <width>501</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Berlin Sans FB Demi</family>
-     <pointsize>14</pointsize>
-     <bold>true</bold>
-    </font>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">color: rgb(20, 33, 68);
-background-color: rgb(255, 255, 255);</string>
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(251, 176, 59);</string>
    </property>
    <property name="text">
     <string/>
    </property>
-   <property name="placeholderText">
-    <string>Required </string>
-   </property>
   </widget>
-  <widget class="QLineEdit" name="owemail">
+  <widget class="QTableWidget" name="eventlist">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>460</y>
-     <width>501</width>
-     <height>21</height>
+     <x>110</x>
+     <y>240</y>
+     <width>1021</width>
+     <height>421</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Berlin Sans FB Demi</family>
-     <pointsize>14</pointsize>
+     <pointsize>8</pointsize>
      <bold>true</bold>
     </font>
    </property>
@@ -129,72 +102,50 @@ background-color: rgb(255, 255, 255);</string>
     <string notr="true">color: rgb(20, 33, 68);
 background-color: rgb(255, 255, 255);</string>
    </property>
-   <property name="placeholderText">
-    <string>Optional</string>
-   </property>
   </widget>
-  <widget class="QLineEdit" name="ownumber">
+  <widget class="QPushButton" name="veventexitbutt">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>540</y>
-     <width>501</width>
-     <height>21</height>
+     <x>570</x>
+     <y>700</y>
+     <width>101</width>
+     <height>31</height>
     </rect>
    </property>
    <property name="font">
     <font>
-     <family>Berlin Sans FB Demi</family>
-     <pointsize>14</pointsize>
+     <family>Arial Black</family>
+     <pointsize>10</pointsize>
+     <italic>false</italic>
      <bold>true</bold>
     </font>
-   </property>
-   <property name="tabletTracking">
-    <bool>true</bool>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">color: rgb(20, 33, 68);
-background-color: rgb(255, 255, 255);</string>
-   </property>
-   <property name="placeholderText">
-    <string>Optional</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="owregbutt">
-   <property name="geometry">
-    <rect>
-     <x>480</x>
-     <y>670</y>
-     <width>181</width>
-     <height>41</height>
-    </rect>
    </property>
    <property name="cursor">
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#owregbutt{
-background-color: rgb(54, 113, 145);
-font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
+    <string notr="true">QWidget#veventexitbutt{
+background-color: rgb(251, 176, 59);
+font: 900 10pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#owregbutt:hover {
+QWidget#veventexitbutt:hover {
     
-    background-color: rgb(251, 176, 59); 
+    background-color: rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
-    padding: 10px 20px; 
-    font-size: 15px; 
+    padding: 8px 20px; 
+    font-size: 12px; 
 }</string>
    </property>
    <property name="text">
-    <string>Register</string>
+    <string>Exit</string>
    </property>
   </widget>
-  <widget class="QLabel" name="owerrormes">
+  <widget class="QLabel" name="editerrormess">
    <property name="geometry">
     <rect>
-     <x>470</x>
-     <y>630</y>
+     <x>320</x>
+     <y>280</y>
      <width>201</width>
      <height>20</height>
     </rect>

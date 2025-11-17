@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>827</width>
-    <height>524</height>
+    <width>1246</width>
+    <height>796</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,8 +18,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>831</width>
-     <height>531</height>
+     <width>1246</width>
+     <height>796</height>
     </rect>
    </property>
    <property name="cursor">
@@ -35,7 +35,7 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>images/mainmenu4.png</pixmap>
+    <pixmap>images/mainmenu6.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -57,10 +57,10 @@
   <widget class="QPushButton" name="eventsbutt">
    <property name="geometry">
     <rect>
-     <x>590</x>
-     <y>160</y>
+     <x>700</x>
+     <y>10</y>
      <width>161</width>
-     <height>61</height>
+     <height>51</height>
     </rect>
    </property>
    <property name="cursor">
@@ -87,20 +87,20 @@ QWidget#eventsbutt:hover {
   <widget class="QCalendarWidget" name="calendarWidget">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>180</y>
-     <width>261</width>
-     <height>241</height>
+     <x>40</x>
+     <y>290</y>
+     <width>321</width>
+     <height>431</height>
     </rect>
    </property>
   </widget>
   <widget class="QPushButton" name="eventregbutt">
    <property name="geometry">
     <rect>
-     <x>590</x>
-     <y>230</y>
+     <x>520</x>
+     <y>10</y>
      <width>161</width>
-     <height>61</height>
+     <height>51</height>
     </rect>
    </property>
    <property name="cursor">
@@ -127,10 +127,10 @@ QWidget#eventregbutt:hover {
   <widget class="QPushButton" name="petregbutt">
    <property name="geometry">
     <rect>
-     <x>590</x>
-     <y>300</y>
-     <width>161</width>
-     <height>61</height>
+     <x>1050</x>
+     <y>10</y>
+     <width>151</width>
+     <height>51</height>
     </rect>
    </property>
    <property name="cursor">
@@ -157,10 +157,10 @@ QWidget#petregbutt:hover {
   <widget class="QPushButton" name="editinbutt">
    <property name="geometry">
     <rect>
-     <x>590</x>
-     <y>370</y>
-     <width>161</width>
-     <height>61</height>
+     <x>880</x>
+     <y>10</y>
+     <width>151</width>
+     <height>51</height>
     </rect>
    </property>
    <property name="cursor">
@@ -187,9 +187,9 @@ QWidget#editinbutt:hover {
   <widget class="QPushButton" name="mmexitbutt">
    <property name="geometry">
     <rect>
-     <x>620</x>
-     <y>450</y>
-     <width>101</width>
+     <x>1050</x>
+     <y>70</y>
+     <width>151</width>
      <height>41</height>
     </rect>
    </property>
@@ -217,9 +217,9 @@ QWidget#mmexitbutt:hover {
   <widget class="QPushButton" name="entrybutt">
    <property name="geometry">
     <rect>
-     <x>410</x>
-     <y>390</y>
-     <width>101</width>
+     <x>520</x>
+     <y>70</y>
+     <width>161</width>
      <height>41</height>
     </rect>
    </property>
@@ -244,32 +244,85 @@ QWidget#entrybutt:hover {
     <string>Entries</string>
    </property>
   </widget>
-  <widget class="QLabel" name="owerusername">
+  <widget class="QTableWidget" name="eventontheday">
    <property name="geometry">
     <rect>
-     <x>650</x>
-     <y>20</y>
-     <width>201</width>
-     <height>20</height>
+     <x>400</x>
+     <y>270</y>
+     <width>801</width>
+     <height>451</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Berlin Sans FB Demi</family>
      <pointsize>10</pointsize>
-     <italic>false</italic>
      <bold>true</bold>
     </font>
    </property>
-   <property name="layoutDirection">
-    <enum>Qt::LeftToRight</enum>
+   <property name="styleSheet">
+    <string notr="true">color: rgb(20, 33, 68);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="editevents">
+   <property name="geometry">
+    <rect>
+     <x>700</x>
+     <y>70</y>
+     <width>161</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
-color: rgb(40, 52, 84);</string>
+    <string notr="true">QWidget#editevents{
+background-color: rgb(251, 176, 59);
+font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
+border-radius: 10px;}
+
+QWidget#editevents:hover {
+    
+    background-color:rgb(238, 223, 146); 
+    border: 2px solid #388E3C; 
+    padding: 10px 20px; 
+    font-size: 15px; 
+}</string>
    </property>
    <property name="text">
-    <string/>
+    <string>Edit Events</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="statusbutt">
+   <property name="geometry">
+    <rect>
+     <x>880</x>
+     <y>70</y>
+     <width>151</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QWidget#statusbutt{
+background-color: rgb(251, 176, 59);
+font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
+border-radius: 10px;}
+
+QWidget#statusbutt:hover {
+    
+    background-color:rgb(238, 223, 146); 
+    border: 2px solid #388E3C; 
+    padding: 10px 20px; 
+    font-size: 15px; 
+}</string>
+   </property>
+   <property name="text">
+    <string>Your Status</string>
    </property>
   </widget>
  </widget>

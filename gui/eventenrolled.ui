@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>827</width>
-    <height>526</height>
+    <width>1246</width>
+    <height>796</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,8 +18,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>831</width>
-     <height>541</height>
+     <width>1246</width>
+     <height>796</height>
     </rect>
    </property>
    <property name="acceptDrops">
@@ -41,8 +41,8 @@
   <widget class="QPushButton" name="eventenrolledbutt">
    <property name="geometry">
     <rect>
-     <x>300</x>
-     <y>400</y>
+     <x>500</x>
+     <y>580</y>
      <width>221</width>
      <height>51</height>
     </rect>

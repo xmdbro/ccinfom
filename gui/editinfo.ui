@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>827</width>
-    <height>524</height>
+    <width>1246</width>
+    <height>796</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,8 +18,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>831</width>
-     <height>531</height>
+     <width>1246</width>
+     <height>796</height>
     </rect>
    </property>
    <property name="cursor">
@@ -57,9 +57,9 @@
   <widget class="QLineEdit" name="editfirst">
    <property name="geometry">
     <rect>
-     <x>220</x>
-     <y>190</y>
-     <width>171</width>
+     <x>340</x>
+     <y>290</y>
+     <width>251</width>
      <height>21</height>
     </rect>
    </property>
@@ -85,9 +85,9 @@ background-color: rgb(255, 255, 255);</string>
   <widget class="QLineEdit" name="editlast">
    <property name="geometry">
     <rect>
-     <x>520</x>
-     <y>190</y>
-     <width>181</width>
+     <x>790</x>
+     <y>290</y>
+     <width>251</width>
      <height>21</height>
     </rect>
    </property>
@@ -112,9 +112,9 @@ background-color: rgb(255, 255, 255);</string>
   <widget class="QLineEdit" name="editnum">
    <property name="geometry">
     <rect>
-     <x>520</x>
-     <y>220</y>
-     <width>181</width>
+     <x>790</x>
+     <y>340</y>
+     <width>251</width>
      <height>21</height>
     </rect>
    </property>
@@ -136,9 +136,9 @@ background-color: rgb(255, 255, 255);</string>
   <widget class="QLineEdit" name="editemail">
    <property name="geometry">
     <rect>
-     <x>220</x>
-     <y>220</y>
-     <width>171</width>
+     <x>340</x>
+     <y>340</y>
+     <width>251</width>
      <height>21</height>
     </rect>
    </property>
@@ -163,8 +163,8 @@ background-color: rgb(255, 255, 255);</string>
   <widget class="QPushButton" name="oweditsavebutt">
    <property name="geometry">
     <rect>
-     <x>110</x>
-     <y>270</y>
+     <x>170</x>
+     <y>400</y>
      <width>171</width>
      <height>31</height>
     </rect>
@@ -201,9 +201,9 @@ QWidget#oweditsavebutt:hover {
   <widget class="QLabel" name="owerrormes">
    <property name="geometry">
     <rect>
-     <x>320</x>
-     <y>380</y>
-     <width>201</width>
+     <x>360</x>
+     <y>410</y>
+     <width>721</width>
      <height>20</height>
     </rect>
    </property>
@@ -229,16 +229,16 @@ color: rgb(251, 176, 59);</string>
   <widget class="QTableWidget" name="petlist">
    <property name="geometry">
     <rect>
-     <x>190</x>
-     <y>330</y>
-     <width>511</width>
-     <height>101</height>
+     <x>270</x>
+     <y>500</y>
+     <width>841</width>
+     <height>181</height>
     </rect>
    </property>
    <property name="font">
     <font>
      <family>Berlin Sans FB Demi</family>
-     <pointsize>7</pointsize>
+     <pointsize>8</pointsize>
      <bold>true</bold>
     </font>
    </property>
@@ -250,8 +250,8 @@ background-color: rgb(255, 255, 255);</string>
   <widget class="QPushButton" name="editpetbutt">
    <property name="geometry">
     <rect>
-     <x>110</x>
-     <y>450</y>
+     <x>160</x>
+     <y>710</y>
      <width>171</width>
      <height>31</height>
     </rect>
@@ -288,8 +288,8 @@ QWidget#editpetbutt:hover {
   <widget class="QPushButton" name="delpetbutt">
    <property name="geometry">
     <rect>
-     <x>290</x>
-     <y>450</y>
+     <x>340</x>
+     <y>710</y>
      <width>171</width>
      <height>31</height>
     </rect>
@@ -326,8 +326,8 @@ QWidget#delpetbutt:hover {
   <widget class="QPushButton" name="editexitbutt">
    <property name="geometry">
     <rect>
-     <x>630</x>
-     <y>450</y>
+     <x>990</x>
+     <y>710</y>
      <width>101</width>
      <height>31</height>
     </rect>
@@ -364,9 +364,9 @@ QWidget#editexitbutt:hover {
   <widget class="QLabel" name="editerrormess">
    <property name="geometry">
     <rect>
-     <x>320</x>
-     <y>280</y>
-     <width>201</width>
+     <x>810</x>
+     <y>690</y>
+     <width>341</width>
      <height>20</height>
     </rect>
    </property>
@@ -388,12 +388,15 @@ color: rgb(251, 176, 59);</string>
    <property name="text">
     <string/>
    </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
   </widget>
   <widget class="QPushButton" name="saveinfobutt">
    <property name="geometry">
     <rect>
-     <x>520</x>
-     <y>450</y>
+     <x>860</x>
+     <y>710</y>
      <width>101</width>
      <height>31</height>
     </rect>

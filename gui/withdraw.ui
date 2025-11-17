@@ -35,7 +35,7 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>images/enrolevent2.png</pixmap>
+    <pixmap>images/withdraw.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -54,11 +54,11 @@
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="enrollevexitbutt">
+  <widget class="QPushButton" name="withexit">
    <property name="geometry">
     <rect>
-     <x>680</x>
-     <y>690</y>
+     <x>690</x>
+     <y>700</y>
      <width>101</width>
      <height>41</height>
     </rect>
@@ -67,12 +67,12 @@
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#enrollevexitbutt{
+    <string notr="true">QWidget#withexit{
 background-color: rgb(251, 176, 59);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#enrollevexitbutt:hover {
+QWidget#withexit:hover {
     
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
@@ -84,11 +84,11 @@ QWidget#enrollevexitbutt:hover {
     <string>Exit</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="enrolevbutt">
+  <widget class="QPushButton" name="withdrawbutt">
    <property name="geometry">
     <rect>
-     <x>430</x>
-     <y>690</y>
+     <x>490</x>
+     <y>700</y>
      <width>121</width>
      <height>41</height>
     </rect>
@@ -97,12 +97,12 @@ QWidget#enrollevexitbutt:hover {
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#enrolevbutt{
+    <string notr="true">QWidget#withdrawbutt{
 background-color: rgb(251, 176, 59);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#enrolevbutt:hover {
+QWidget#withdrawbutt:hover {
     
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
@@ -111,13 +111,13 @@ QWidget#enrolevbutt:hover {
 }</string>
    </property>
    <property name="text">
-    <string>Enroll</string>
+    <string>Withdraw</string>
    </property>
   </widget>
   <widget class="QLabel" name="owerusername">
    <property name="geometry">
     <rect>
-     <x>990</x>
+     <x>1000</x>
      <y>30</y>
      <width>141</width>
      <height>20</height>
@@ -142,12 +142,12 @@ color: rgb(40, 52, 84);</string>
     <string/>
    </property>
   </widget>
-  <widget class="QComboBox" name="enrollselev">
+  <widget class="QComboBox" name="withdrawfrom">
    <property name="geometry">
     <rect>
-     <x>410</x>
+     <x>300</x>
      <y>310</y>
-     <width>221</width>
+     <width>451</width>
      <height>22</height>
     </rect>
    </property>
@@ -160,9 +160,9 @@ background-color: rgb(255, 255, 255);</string>
   <widget class="QLabel" name="petregiserr">
    <property name="geometry">
     <rect>
-     <x>320</x>
-     <y>420</y>
-     <width>431</width>
+     <x>330</x>
+     <y>680</y>
+     <width>611</width>
      <height>20</height>
     </rect>
    </property>
@@ -188,128 +188,42 @@ color: rgb(251, 176, 59);</string>
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QDateEdit" name="enrollregdate">
+  <widget class="QListWidget" name="currententry">
    <property name="geometry">
     <rect>
-     <x>470</x>
-     <y>390</y>
-     <width>151</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
-color: rgb(40, 52, 84);
-background-color: rgb(255, 255, 255);</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="enrollsummary">
-   <property name="geometry">
-    <rect>
-     <x>810</x>
-     <y>300</y>
-     <width>161</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Berlin Sans FB Demi</family>
-     <pointsize>8</pointsize>
-     <italic>false</italic>
-     <bold>true</bold>
-    </font>
-   </property>
-   <property name="layoutDirection">
-    <enum>Qt::LeftToRight</enum>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">font: 700 8pt &quot;Berlin Sans FB Demi&quot;; 
-color: rgb(40, 52, 84);</string>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
-  <widget class="QLabel" name="enrollattstat">
-   <property name="geometry">
-    <rect>
-     <x>820</x>
-     <y>300</y>
-     <width>91</width>
-     <height>20</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Berlin Sans FB Demi</family>
-     <pointsize>8</pointsize>
-     <italic>false</italic>
-     <bold>true</bold>
-    </font>
-   </property>
-   <property name="layoutDirection">
-    <enum>Qt::LeftToRight</enum>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">font: 700 8pt &quot;Berlin Sans FB Demi&quot;; 
-color: rgb(40, 52, 84);</string>
-   </property>
-   <property name="text">
-    <string/>
-   </property>
-  </widget>
-  <widget class="QListWidget" name="enrollpayment">
-   <property name="geometry">
-    <rect>
-     <x>340</x>
-     <y>450</y>
-     <width>721</width>
-     <height>231</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
-color: rgb(40, 52, 84);
-background-color: rgb(255, 255, 255);</string>
-   </property>
-  </widget>
-  <widget class="QComboBox" name="selectpetbutt">
-   <property name="geometry">
-    <rect>
-     <x>800</x>
-     <y>390</y>
-     <width>241</width>
-     <height>22</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
-color: rgb(40, 52, 84);
-background-color: rgb(255, 255, 255);</string>
-   </property>
-  </widget>
-  <widget class="QListWidget" name="statuspart">
-   <property name="geometry">
-    <rect>
-     <x>780</x>
-     <y>290</y>
-     <width>261</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
-color: rgb(40, 52, 84);
-background-color: rgb(255, 255, 255);</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="petwarningsize">
-   <property name="geometry">
-    <rect>
-     <x>780</x>
+     <x>190</x>
      <y>420</y>
-     <width>281</width>
+     <width>911</width>
+     <height>241</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 8pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+  </widget>
+  <widget class="QListWidget" name="petandowner">
+   <property name="geometry">
+    <rect>
+     <x>770</x>
+     <y>280</y>
+     <width>321</width>
+     <height>101</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="warningwithdrawal">
+   <property name="geometry">
+    <rect>
+     <x>380</x>
+     <y>390</y>
+     <width>521</width>
      <height>20</height>
     </rect>
    </property>
@@ -331,21 +245,101 @@ color: rgb(248, 174, 58);</string>
    <property name="text">
     <string/>
    </property>
+   <property name="alignment">
+    <set>Qt::AlignCenter</set>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>310</y>
+     <width>91</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Berlin Sans FB Demi</family>
+     <pointsize>12</pointsize>
+     <italic>false</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="text">
+    <string>Select Event:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_4">
+   <property name="geometry">
+    <rect>
+     <x>200</x>
+     <y>380</y>
+     <width>91</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Berlin Sans FB Demi</family>
+     <pointsize>12</pointsize>
+     <italic>false</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="text">
+    <string>Summary:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_5">
+   <property name="geometry">
+    <rect>
+     <x>770</x>
+     <y>260</y>
+     <width>211</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Berlin Sans FB Demi</family>
+     <pointsize>12</pointsize>
+     <italic>false</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="text">
+    <string>Owner And Pet Registered:</string>
+   </property>
   </widget>
   <zorder>label</zorder>
   <zorder>widget</zorder>
-  <zorder>enrollevexitbutt</zorder>
-  <zorder>enrolevbutt</zorder>
+  <zorder>withexit</zorder>
+  <zorder>withdrawbutt</zorder>
   <zorder>owerusername</zorder>
-  <zorder>enrollselev</zorder>
+  <zorder>withdrawfrom</zorder>
+  <zorder>currententry</zorder>
+  <zorder>warningwithdrawal</zorder>
+  <zorder>label_2</zorder>
+  <zorder>label_4</zorder>
+  <zorder>label_5</zorder>
   <zorder>petregiserr</zorder>
-  <zorder>enrollregdate</zorder>
-  <zorder>enrollsummary</zorder>
-  <zorder>enrollattstat</zorder>
-  <zorder>enrollpayment</zorder>
-  <zorder>selectpetbutt</zorder>
-  <zorder>petwarningsize</zorder>
-  <zorder>statuspart</zorder>
+  <zorder>petandowner</zorder>
  </widget>
  <resources/>
  <connections/>
