@@ -1,21 +1,53 @@
 import sys
-import sqlite3
+from datetime import datetime, date
+import mysql.connector
+from mysql.connector import Error
 from PyQt6.uic import loadUi
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QDialog, QApplication, QWidget, QStackedWidget
 
-DB_FILE = 'pet_show_portable.db'
+DB_CONFIG = {
+    'host': 'localhost',
+    'user': 'root',
+    'password': 'group2s14',
+    'database': 'pet_show'
+}
 
 def get_db_connection():
-    """Establishes connection to the SQLite database file."""
+    """Open a MySQL connection using the config above."""
     try:
-        # sqlite3.connect creates the file if it is not found.
-        conn = sqlite3.connect(DB_FILE) 
-        conn.execute("PRAGMA foreign_keys = ON")
+        conn = mysql.connector.connect(**DB_CONFIG)
+        if conn.is_connected():
+            conn.autocommit = False
         return conn
-    except sqlite3.Error as err:
-        print(f"SQLite Connection Error: {err}")
+    except Error as err:
+        print(f"MySQL Connection Error: {err}")
         return None
+
+
+def to_python_date(value):
+    """Try to turn whatever this is into a plain date."""
+    if value is None:
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    if isinstance(value, datetime):
+        return value.date()
+    value_str = str(value)
+    for fmt in ("%Y-%m-%d", "%Y/%m/%d"):
+        try:
+            return datetime.strptime(value_str, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def format_date_string(value):
+    """Turn a date-ish value into a nice YYYY-MM-DD string."""
+    parsed = to_python_date(value)
+    if parsed:
+        return parsed.strftime("%Y-%m-%d")
+    return str(value) if value not in (None, '') else ''
 
 def setup_database():
    
@@ -178,12 +210,12 @@ def setup_database():
             """)
            
             # size_category
-            cursor.executemany("INSERT OR IGNORE INTO size_category (size_id, size_name) VALUES (?, ?)", [
+            cursor.executemany("INSERT IGNORE INTO size_category (size_id, size_name) VALUES (%s, %s)", [
                 (1, 'Small'), (2, 'Medium'), (3, 'Large')
             ])
             
             # owners
-            cursor.executemany("INSERT OR IGNORE INTO owners (owner_id, first_name, last_name, email, contact_number) VALUES (?, ?, ?, ?, ?)", [
+            cursor.executemany("INSERT IGNORE INTO owners (owner_id, first_name, last_name, email, contact_number) VALUES (%s, %s, %s, %s, %s)", [
                 (1, 'Miguel', 'Santos', 'miguel.santos@example.com', '09171234567'), (2, 'Anna', 'Reyes', 'anna.reyes@example.com', '09181234567'), 
                 (3, 'Diego', 'Velasco', 'diego.velasco@example.com', '09191234567'), (4, 'Hannah', 'Lopez', 'h.lopez@example.com', '09201234567'), 
                 (5, 'Rafael', 'DelaCruz', 'rafael.delacruz@example.com', '09211234567'), (6, 'Sofia', 'Garcia', 'sofia.garcia@example.com', '09221234567'), 
@@ -195,7 +227,7 @@ def setup_database():
             ])
 
             # breeds
-            cursor.executemany("INSERT OR IGNORE INTO breeds (breed_id, breed_name, size_id) VALUES (?, ?, ?)", [
+            cursor.executemany("INSERT IGNORE INTO breeds (breed_id, breed_name, size_id) VALUES (%s, %s, %s)", [
                 (1, 'Chihuahua', 1), (2, 'Pomeranian', 1), (3, 'Dachshund', 1), (4, 'Beagle', 2), (5, 'Bulldog', 2),
                 (6, 'Labrador Retriever', 3), (7, 'Golden Retriever', 3), (8, 'Border Collie', 2), (9, 'German Shepherd', 3),
                 (10, 'Great Dane', 3), (11, 'Jack Russell Terrier', 1), (12, 'French Bulldog', 2), (13, 'Shih Tzu', 1),
@@ -203,7 +235,7 @@ def setup_database():
             ])
             
             # events
-            cursor.executemany("INSERT OR IGNORE INTO events (event_id, name, date, time, location, max_participants, registration_deadline, type, distance_km, time_limit, status, base_registration_fee, extra_pet_discount, min_weight, max_weight, min_size_id, max_size_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+            cursor.executemany("INSERT IGNORE INTO events (event_id, name, date, time, location, max_participants, registration_deadline, type, distance_km, time_limit, status, base_registration_fee, extra_pet_discount, min_weight, max_weight, min_size_id, max_size_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [
                 (1, 'Dog Fun Run - Event Starter', '2025-11-21', '07:00:00', 'Greenfield Park, Manila', 150, '2025-11-10', 'Fun Run', 3.00, 60, 1, 300.00, 50.00, None, None, 1, 3),
                 (2, 'Dog Agility Course - Tunnels & Jumps', '2025-11-21', '09:00:00', 'Greenfield Park, Manila', 60, '2025-11-10', 'Agility', None, 30, 1, 400.00, 75.00, None, None, 1, 3),
                 (3, 'Obedience Challenge', '2025-11-21', '11:00:00', 'Greenfield Park, Manila', 40, '2025-11-10', 'Obedience', None, 20, 1, 250.00, 40.00, None, None, 1, 3),
@@ -219,7 +251,7 @@ def setup_database():
             ])
 
             # pets
-            cursor.executemany("INSERT OR IGNORE INTO pets (pet_id, owner_id, name, actual_size_id, age, sex, weight_kg, muzzle_required, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+            cursor.executemany("INSERT IGNORE INTO pets (pet_id, owner_id, name, actual_size_id, age, sex, weight_kg, muzzle_required, notes) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)", [
                 (1, 1, 'Rico', 3, 4, 'Male', 28.50, 0, 'Loves fetch; friendly with kids'), (2, 1, 'Pip', 1, 2, 'Female', 4.10, 0, 'Tiny, energetic'),
                 (3, 2, 'Luna', 1, 2, 'Female', 4.20, 0, 'Very photogenic; short-haired'), (4, 2, 'Mochi', 1, 1, 'Male', 3.60, 0, 'Affectionate lap dog'),
                 (5, 3, 'Max', 3, 6, 'Male', 30.00, 0, 'Good at recall'), (6, 4, 'Bella', 2, 3, 'Female', 12.30, 0, 'Agile and fast'),
@@ -236,14 +268,14 @@ def setup_database():
             ])
 
             # pet_breed_junction
-            cursor.executemany("INSERT OR IGNORE INTO pet_breed_junction (pet_id, breed_id) VALUES (?, ?)", [
+            cursor.executemany("INSERT IGNORE INTO pet_breed_junction (pet_id, breed_id) VALUES (%s, %s)", [
                 (1, 6), (2, 14), (3, 14), (4, 1), (5, 6), (6, 4), (7, 9), (8, 5), (9, 1), (10, 9), (11, 8), (12, 2),
                 (13, 10), (14, 6), (15, 8), (16, 11), (17, 13), (18, 12), (19, 13), (20, 1), (21, 5), (22, 7), 
                 (23, 4), (24, 2), (25, 3)
             ])
 
             # event_registration
-            cursor.executemany("INSERT OR IGNORE INTO event_registration (registration_id, owner_id, event_id, registration_date, total_amount_paid, payment_date, payment_time, status, transfer_destination, cancellation_date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+            cursor.executemany("INSERT IGNORE INTO event_registration (registration_id, owner_id, event_id, registration_date, total_amount_paid, payment_date, payment_time, status, transfer_destination, cancellation_date) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [
                 (1, 1, 1, '2025-11-05', 300.00, '2025-11-05', '09:30:00', 'Paid', None, None), (2, 2, 4, '2025-11-06', 200.00, '2025-11-06', '10:10:00', 'Paid', None, None),
                 (3, 3, 2, '2025-11-07', 400.00, '2025-11-07', '11:20:00', 'Paid', None, None), (4, 4, 10, '2025-11-07', 260.00, '2025-11-07', '12:00:00', 'Paid', None, None),
                 (5, 5, 8, '2025-11-08', 300.00, '2025-11-08', '09:00:00', 'Paid', None, None), (6, 6, 9, '2025-11-09', 120.00, '2025-11-09', '08:30:00', 'Paid', None, None),
@@ -256,7 +288,7 @@ def setup_database():
             ])
 
             # pet_event_entry
-            cursor.executemany("INSERT OR IGNORE INTO pet_event_entry (entry_id, registration_id, pet_id, event_id, attendance_status, pet_result) VALUES (?, ?, ?, ?, ?, ?)", [
+            cursor.executemany("INSERT IGNORE INTO pet_event_entry (entry_id, registration_id, pet_id, event_id, attendance_status, pet_result) VALUES (%s, %s, %s, %s, %s, %s)", [
                 (1, 1, 1, 1, 'Present', 8.7), (2, 2, 3, 4, 'Present', 9.3), (3, 3, 5, 2, 'Present', 9.8), (4, 4, 6, 10, 'Present', 8.9), 
                 (5, 5, 7, 8, 'Present', 9.4), (6, 6, 9, 9, 'Present', 8.2), (7, 7, 10, 1, 'Present', 8.6), (8, 8, 12, 11, 'Present', 9.7), 
                 (9, 9, 13, 8, 'No Show', 0.0), (10, 10, 15, 2, 'Present', 9.9), (11, 11, 16, 6, 'Present', 9.5), (12, 12, 18, 7, 'Present', 9.1), 
@@ -265,7 +297,7 @@ def setup_database():
             ])
 
             # awards
-            cursor.executemany("INSERT OR IGNORE INTO awards (award_id, pet_id, type, description, date, event_id) VALUES (?, ?, ?, ?, ?, ?)", [
+            cursor.executemany("INSERT IGNORE INTO awards (award_id, pet_id, type, description, date, event_id) VALUES (%s, %s, %s, %s, %s, %s)", [
                 (1, 3, 'Best Costume - 1st Place', 'Pirate-themed costume, high creativity', '2025-11-21', 4), (2, 19, 'Best Costume - 2nd Place', 'Colorful tutu and hat', '2025-11-21', 4),
                 (3, 5, 'Agility - Fastest Run', 'Completed course fastest in novice division', '2025-11-21', 2), (4, 15, 'Frisbee - Best Catch', 'Long-distance catch accuracy', '2025-11-23', 10),
                 (5, 1, 'Fun Run - Top Veteran', 'Top among 3-5 year old category', '2025-11-21', 1), (6, 16, 'Fastest Fetch - Winner', 'Fastest retrieve time', '2025-11-22', 6),
@@ -275,7 +307,7 @@ def setup_database():
             ])
 
             # participation_log
-            cursor.executemany("INSERT OR IGNORE INTO participation_log (log_id, registration_id, action_type, action_date, action_time, original_event_id, new_event_id, reason, refund_amount, top_up_amount) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
+            cursor.executemany("INSERT IGNORE INTO participation_log (log_id, registration_id, action_type, action_date, action_time, original_event_id, new_event_id, reason, refund_amount, top_up_amount) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)", [
                 (1, 1, 'Modified', '2025-11-06', '09:00:00', 1, None, 'Updated emergency contact', 0.00, 0.00), (2, 2, 'Transferred', '2025-11-09', '10:00:00', 4, 11, 'Owner requested transfer to Photo Booth', 0.00, 0.00),
                 (3, 3, 'Paid', '2025-11-07', '11:20:00', 2, None, 'Full payment received', 0.00, 0.00), (4, 4, 'Cancelled', '2025-11-10', '12:30:00', 10, None, 'Owner withdrew due to travel', 260.00, 0.00),
                 (5, 5, 'Paid', '2025-11-08', '09:00:00', 8, None, 'Paid and confirmed', 0.00, 0.00), (6, 6, 'Paid', '2025-11-09', '08:30:00', 9, None, 'Paid and confirmed', 0.00, 0.00),
@@ -288,7 +320,7 @@ def setup_database():
 
             conn.commit()
             print("Database setup complete with 10 tables and initial data.")
-        except sqlite3.Error as e:
+        except Error as e:
             print(f"Database setup error: {e}")
         finally:
             if conn:
@@ -340,22 +372,22 @@ class OwnerRegisScreen(QDialog):
                 new_owner_id = (max_id if max_id is not None else 0) + 1
                 
                 # Insert into the database
-                sql = "INSERT INTO owners (owner_id, first_name, last_name, email, contact_number) VALUES (?, ?, ?, ?, ?)"
+                sql = "INSERT INTO owners (owner_id, first_name, last_name, email, contact_number) VALUES (%s, %s, %s, %s, %s)"
                 data = (new_owner_id, userfirstname, userlastname, useremail, usernumber)
                 
                 cursor.execute(sql, data)
                 conn.commit()
                 
                 # Verify the insert was successful
-                cursor.execute("SELECT owner_id FROM owners WHERE owner_id = ?", (new_owner_id,))
+                cursor.execute("SELECT owner_id FROM owners WHERE owner_id = %s", (new_owner_id,))
                 if cursor.fetchone():
                     print(f"Owner successfully registered with ID: {new_owner_id}")
                     self.gotommenu()
 
                 else:
-                    raise sqlite3.Error("Insert verification failed")
+                    raise Error("Insert verification failed")
 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Database INSERT Error (Owner): {err}")
                 if conn:
                     conn.rollback()
@@ -387,18 +419,19 @@ class mainmenu(QDialog):
         self.editinbutt.clicked.connect(self.gotoeditinfo)
         self.eventsbutt.clicked.connect(self.gotoevents)
         self.entrybutt.clicked.connect(self.gotoentries)
+        self.statusbutt.clicked.connect(self.gotostatus)
         self.mmexitbutt.clicked.connect(self.quit_application)
         self.calendarWidget.selectionChanged.connect(self.on_date_selected)
         
-        # Initialize eventontheday table
+        # Set up the mini "what's happening today" table
         self.load_date_summary()
     
     def on_date_selected(self):
-        """Handle calendar date selection."""
+        """When the calendar changes, refresh the summary table."""
         self.load_date_summary()
     
     def load_date_summary(self):
-        "Load events and statistics for the selected date."
+        "Grab events and basic stats for the currently selected date."
         selected_date = self.calendarWidget.selectedDate()
         date_str = selected_date.toString("yyyy-MM-dd")
         
@@ -414,7 +447,7 @@ class mainmenu(QDialog):
             cursor.execute("""
                 SELECT name, time
                 FROM events
-                WHERE date = ?
+                WHERE date = %s
                 ORDER BY time
             """, (date_str,))
             
@@ -432,7 +465,7 @@ class mainmenu(QDialog):
                        COUNT(DISTINCT pee.pet_id) as total_pets
                 FROM event_registration er
                 JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
-                WHERE er.registration_date = ? AND er.status = 'Paid'
+                WHERE er.registration_date = %s AND er.status = 'Paid'
             """, (date_str,))
             
             reg_result = cursor.fetchone()
@@ -451,7 +484,7 @@ class mainmenu(QDialog):
                 FROM participation_log pl
                 JOIN event_registration er ON pl.registration_id = er.registration_id
                 JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
-                WHERE pl.action_type = 'Transferred' AND pl.action_date = ?
+                WHERE pl.action_type = 'Transferred' AND pl.action_date = %s
             """, (date_str,))
             
             transfer_result = cursor.fetchone()
@@ -468,7 +501,7 @@ class mainmenu(QDialog):
                        COUNT(DISTINCT er.owner_id) as total_participants
                 FROM participation_log pl
                 JOIN event_registration er ON pl.registration_id = er.registration_id
-                WHERE pl.action_type = 'Cancelled' AND pl.action_date = ?
+                WHERE pl.action_type = 'Cancelled' AND pl.action_date = %s
             """, (date_str,))
             
             withdrawal_result = cursor.fetchone()
@@ -491,7 +524,7 @@ class mainmenu(QDialog):
                 SELECT e.name as event_name, a.type as award_type, COUNT(*) as award_count
                 FROM awards a
                 JOIN events e ON a.event_id = e.event_id
-                WHERE a.date = ?
+                WHERE a.date = %s
                 GROUP BY e.name, a.type
                 ORDER BY e.name, a.type
             """, (date_str,))
@@ -524,8 +557,16 @@ class mainmenu(QDialog):
             
             # Resize columns
             self.eventontheday.resizeColumnsToContents()
+            header = self.eventontheday.horizontalHeader()
+            if header:
+                header.setStretchLastSection(True)
+                header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+            vheader = self.eventontheday.verticalHeader()
+            if vheader:
+                vheader.setVisible(False)
+                vheader.setDefaultSectionSize(28)
             
-        except sqlite3.Error as err:
+        except Error as err:
             print(f"Error loading date summary: {err}")
         finally:
             if conn:
@@ -539,10 +580,20 @@ class mainmenu(QDialog):
         entrs= entries()
         widget.addWidget(entrs)
         widget.setCurrentIndex(widget.currentIndex() + 1)
+    
+    def gotostatus(self):
+        sts= status()
+        widget.addWidget(sts)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
 
     def gotoevents(self):
         evs = viewevents()
         widget.addWidget(evs)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
+    def gotostatus(self):
+        status_screen = yourstatuss()
+        widget.addWidget(status_screen)
         widget.setCurrentIndex(widget.currentIndex() + 1)
 
     def gotopetregis(self):
@@ -612,7 +663,7 @@ class petregistration(QDialog):
                 new_pet_id = (max_pet_id if max_pet_id is not None else 0) + 1
                 
 
-                sql_breed_lookup = "SELECT breed_id FROM breeds WHERE breed_name = ?"
+                sql_breed_lookup = "SELECT breed_id FROM breeds WHERE breed_name = %s"
                 cursor.execute(sql_breed_lookup, (petbreed,))
                 breed_result = cursor.fetchone()
 
@@ -624,7 +675,7 @@ class petregistration(QDialog):
                     max_breed_id = cursor.fetchone()[0]
                     new_breed_id = max(16, (max_breed_id if max_breed_id is not None else 0) + 1)
                     
-                    sql_insert_breed = "INSERT INTO breeds (breed_id, breed_name, size_id) VALUES (?, ?, ?)"
+                    sql_insert_breed = "INSERT INTO breeds (breed_id, breed_name, size_id) VALUES (%s, %s, %s)"
                     cursor.execute(sql_insert_breed, (new_breed_id, petbreed, 3)) 
                     
                     breed_id = new_breed_id
@@ -632,7 +683,7 @@ class petregistration(QDialog):
                 sql_pet = """
                 INSERT INTO pets 
                 (pet_id, owner_id, name, actual_size_id, age, sex, weight_kg, muzzle_required, notes) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """
                 data_pet = (
                     new_pet_id, 
@@ -648,21 +699,21 @@ class petregistration(QDialog):
                 
                 cursor.execute(sql_pet, data_pet)
 
-                sql_junction = "INSERT INTO pet_breed_junction (pet_id, breed_id) VALUES (?, ?)"
+                sql_junction = "INSERT INTO pet_breed_junction (pet_id, breed_id) VALUES (%s, %s)"
                 data_junction = (new_pet_id, breed_id)
                 
                 cursor.execute(sql_junction, data_junction)
                 
                 conn.commit()
                 
-                cursor.execute("SELECT pet_id FROM pets WHERE pet_id = ?", (new_pet_id,))
+                cursor.execute("SELECT pet_id FROM pets WHERE pet_id = %s", (new_pet_id,))
                 if cursor.fetchone():
                     print(f"Pet successfully registered with ID: {new_pet_id}")
                     self.gotopetregistered()
                 else:
-                    raise sqlite3.Error("Insert verification failed")
+                    raise Error("Insert verification failed")
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Database INSERT Error (Pet): {err}")
                 if conn:
                     conn.rollback()
@@ -717,27 +768,27 @@ class enrollevent(QDialog):
         self.enrollattstat = self.findChild(QtWidgets.QLabel, 'enrollattstat')
         self.owerusername = self.findChild(QtWidgets.QLabel, 'owerusername')
         
-        # Store current owner and selected data
+        # Keep track of which owner/pet/event we're dealing with
         self.current_owner_id = None
         self.selected_event_id = None
         self.selected_pet_id = None
         self.event_data = {}
         
-        # Set up date picker to today's date
+        # Default registration date to "today" so user doesn't have to pick
         from datetime import date
         self.enrollregdate.setDate(date.today())
         
-        # Connect combo box signals
+        # Hook up dropdowns so we react when user changes stuff
         self.enrollselev.currentIndexChanged.connect(self.on_event_selected)
         self.selectpetbutt.currentIndexChanged.connect(self.on_pet_selected)
         
-        # Load data
+        # Load initial data for owner, events, and pets
         self.load_owner_data()
         self.load_events()
         self.load_pets()
         
     def load_owner_data(self):
-        "Load the current owner's information."
+        "Grab the most recently added owner and show their name."
         conn = get_db_connection()
         if conn:
             try:
@@ -752,21 +803,21 @@ class enrollevent(QDialog):
                     cursor.execute("""
                         SELECT first_name, last_name 
                         FROM owners 
-                        WHERE owner_id = ?
+                        WHERE owner_id = %s
                     """, (self.current_owner_id,))
                     
                     owner_data = cursor.fetchone()
                     if owner_data:
                         owner_name = f"{owner_data[0]} {owner_data[1]}"
                         self.owerusername.setText(owner_name)
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading owner data: {err}")
             finally:
                 if conn:
                     conn.close()
     
     def load_events(self):
-        """Load all open events into the combo box."""
+        """Pull all open events into the event dropdown."""
         conn = get_db_connection()
         if conn:
             try:
@@ -805,7 +856,7 @@ class enrollevent(QDialog):
                         'max_weight': event[11],
                         'registration_deadline': event[12]
                     }
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading events: {err}")
                 self.petregiserr.setText('Error loading events.')
             finally:
@@ -813,7 +864,7 @@ class enrollevent(QDialog):
                     conn.close()
     
     def load_pets(self):
-        """Load all pets for the current owner into the combo box."""
+        """Put all this owner's pets into the pet dropdown."""
         if self.current_owner_id is None:
             return
             
@@ -826,7 +877,7 @@ class enrollevent(QDialog):
                            sc.size_name
                     FROM pets p
                     LEFT JOIN size_category sc ON p.actual_size_id = sc.size_id
-                    WHERE p.owner_id = ?
+                    WHERE p.owner_id = %s
                     ORDER BY p.name
                 """, (self.current_owner_id,))
                 
@@ -846,7 +897,7 @@ class enrollevent(QDialog):
                         'weight_kg': pet[3],
                         'size_name': pet[4]
                     }
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading pets: {err}")
                 self.petregiserr.setText('Error loading pets.')
             finally:
@@ -854,7 +905,7 @@ class enrollevent(QDialog):
                     conn.close()
     
     def on_event_selected(self):
-        """Handle event selection and check size compatibility."""
+        """When the event changes, update summary and size checks."""
         selected_text = self.enrollselev.currentText()
         if not selected_text or selected_text not in self.event_dict:
             return
@@ -870,7 +921,7 @@ class enrollevent(QDialog):
             self.check_pet_size_compatibility()
     
     def on_pet_selected(self):
-        """Handle pet selection and check size compatibility."""
+        """When the pet changes, update summary and size checks."""
         selected_text = self.selectpetbutt.currentText()
         if not selected_text or selected_text not in self.pet_dict:
             return
@@ -885,7 +936,7 @@ class enrollevent(QDialog):
             self.check_pet_size_compatibility()
     
     def check_pet_size_compatibility(self):
-        """Check if the selected pet's size matches the event requirements."""
+        """Rough check if this pet fits the event's size/weight rules."""
         if not self.enrollselev.currentText() or not self.selectpetbutt.currentText():
             self.petwarningsize.setText('')
             return
@@ -926,7 +977,7 @@ class enrollevent(QDialog):
             self.petwarningsize.setText('✓ Pet size and weight are compatible')
     
     def update_summary(self):
-        """Update the enrollment summary display."""
+        """Refresh the little summary box for the current selection."""
         if not self.enrollselev.currentText():
             self.enrollsummary.setText('')
             self.enrollattstat.setText('')
@@ -941,7 +992,7 @@ class enrollevent(QDialog):
         event = self.event_dict[event_text]
         reg_date = self.enrollregdate.date().toString("yyyy-MM-dd")
         
-        # Build summary text
+        # Build summary text we show in the label
         summary_parts = []
         summary_parts.append(f"Event: {event['name']}")
         summary_parts.append(f"Date: {event['date']} at {event['time']}")
@@ -958,14 +1009,14 @@ class enrollevent(QDialog):
         
         self.enrollsummary.setText('\n'.join(summary_parts))
         
-        # Set attendance status (default to "Registered")
+        # Just show a simple status line for now
         self.enrollattstat.setText("Status: Registered")
         
-        # Calculate payment details
+        # Recompute payment and participants
         self.calculate_payment()
     
     def calculate_payment(self):
-        """Calculate and display payment details."""
+        """Figure out how much to pay and show it."""
         self.enrollpayment.clear()
         self.statuspart.clear()
         
@@ -977,7 +1028,7 @@ class enrollevent(QDialog):
         discount = event['extra_pet_discount']
         event_id = event['event_id']
         
-        # Count how many pets are already registered for this event by this owner
+        # See how many of this owner's pets already joined this event
         conn = get_db_connection()
         if conn:
             try:
@@ -989,7 +1040,7 @@ class enrollevent(QDialog):
                     cursor.execute("""
                         SELECT first_name, last_name 
                         FROM owners 
-                        WHERE owner_id = ?
+                        WHERE owner_id = %s
                     """, (self.current_owner_id,))
                     owner_result = cursor.fetchone()
                     if owner_result:
@@ -1013,7 +1064,7 @@ class enrollevent(QDialog):
                     SELECT COUNT(DISTINCT pee.pet_id)
                     FROM event_registration er
                     JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
-                    WHERE er.owner_id = ? AND er.event_id = ? AND er.status = 'Paid'
+                    WHERE er.owner_id = %s AND er.event_id = %s AND er.status = 'Paid'
                 """, (self.current_owner_id, event_id))
                 
                 existing_pets_count = cursor.fetchone()[0] or 0
@@ -1036,7 +1087,7 @@ class enrollevent(QDialog):
                     SELECT COUNT(DISTINCT pee.pet_id)
                     FROM event_registration er
                     JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
-                    WHERE er.event_id = ? AND er.status = 'Paid'
+                    WHERE er.event_id = %s AND er.status = 'Paid'
                 """, (event_id,))
                 
                 total_participants = cursor.fetchone()[0] or 0
@@ -1047,7 +1098,7 @@ class enrollevent(QDialog):
                 self.statuspart.addItem(f"Participants: {total_participants}")
                 self.statuspart.addItem(f"Available Spots: {available_spots}")
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error calculating payment: {err}")
             finally:
                 if conn:
@@ -1093,7 +1144,7 @@ class enrollevent(QDialog):
                     SELECT COUNT(*) 
                     FROM pet_event_entry pee
                     JOIN event_registration er ON pee.registration_id = er.registration_id
-                    WHERE pee.pet_id = ? AND pee.event_id = ? AND er.status = 'Paid'
+                    WHERE pee.pet_id = %s AND pee.event_id = %s AND er.status = 'Paid'
                 """, (pet['pet_id'], event['event_id']))
                 
                 if cursor.fetchone()[0] > 0:
@@ -1102,23 +1153,28 @@ class enrollevent(QDialog):
                     return
                 
                 # Check event deadline
-                reg_date = self.enrollregdate.date().toString("yyyy-MM-dd")
+                reg_qdate = self.enrollregdate.date()
+                reg_date_obj = reg_qdate.toPyDate()
+                reg_date = reg_date_obj.strftime("%Y-%m-%d")
                 deadline = event.get('registration_deadline')
                 
+                deadline_date = to_python_date(deadline)
                 if deadline:
                     # Get deadline from database
                     cursor.execute("""
                         SELECT registration_deadline 
                         FROM events 
-                        WHERE event_id = ?
+                        WHERE event_id = %s
                     """, (event['event_id'],))
                     deadline_result = cursor.fetchone()
                     if deadline_result and deadline_result[0]:
                         deadline = deadline_result[0]
-                        if reg_date > deadline:
-                            self.petregiserr.setText(f'Registration deadline ({deadline}) has passed.')
-                            conn.close()
-                            return
+                        deadline_date = to_python_date(deadline)
+                if deadline_date and reg_date_obj > deadline_date:
+                    deadline_text = deadline_date.strftime("%Y-%m-%d")
+                    self.petregiserr.setText(f'Registration deadline ({deadline_text}) has passed.')
+                    conn.close()
+                    return
                 
                 # Get next registration ID
                 cursor.execute("SELECT MAX(registration_id) FROM event_registration")
@@ -1130,7 +1186,7 @@ class enrollevent(QDialog):
                     SELECT COUNT(DISTINCT pee.pet_id)
                     FROM event_registration er
                     JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
-                    WHERE er.owner_id = ? AND er.event_id = ? AND er.status = 'Paid'
+                    WHERE er.owner_id = %s AND er.event_id = %s AND er.status = 'Paid'
                 """, (self.current_owner_id, event['event_id']))
                 
                 existing_pets_count = cursor.fetchone()[0] or 0
@@ -1151,7 +1207,7 @@ class enrollevent(QDialog):
                     INSERT INTO event_registration 
                     (registration_id, owner_id, event_id, registration_date, 
                      total_amount_paid, payment_date, payment_time, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
                 """, (new_reg_id, self.current_owner_id, event['event_id'], reg_date,
                       total_amount, payment_date, payment_time, 'Paid'))
                 
@@ -1164,7 +1220,7 @@ class enrollevent(QDialog):
                 cursor.execute("""
                     INSERT INTO pet_event_entry 
                     (entry_id, registration_id, pet_id, event_id, attendance_status)
-                    VALUES (?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s)
                 """, (new_entry_id, new_reg_id, pet['pet_id'], event['event_id'], 'Registered'))
                 
                 conn.commit()
@@ -1172,7 +1228,7 @@ class enrollevent(QDialog):
                 print(f"Successfully enrolled pet {pet['name']} in event {event['name']}")
                 self.gotoeventenroll()
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Database INSERT Error (Enrollment): {err}")
                 if conn:
                     conn.rollback()
@@ -1233,13 +1289,13 @@ class editinf(QDialog):
         self.loadpets()
         
     def loadownerdata(self):
-        """Load the current owner's information into the form fields."""
+        """Load the latest owner's info into the text fields."""
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
                 
-                # Get the most recently registered owner
+                # Just grab the most recently added owner
                 cursor.execute("SELECT MAX(owner_id) FROM owners")
                 result = cursor.fetchone()
                 
@@ -1250,7 +1306,7 @@ class editinf(QDialog):
                     cursor.execute("""
                         SELECT first_name, last_name, email, contact_number 
                         FROM owners 
-                        WHERE owner_id = ?
+                        WHERE owner_id = %s
                     """, (self.current_owner_id,))
                     
                     owner_data = cursor.fetchone()
@@ -1263,7 +1319,7 @@ class editinf(QDialog):
                 else:
                     self.owerrormes.setText('No owner found. Please register first.')
                     
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading owner data: {err}")
                 self.owerrormes.setText('Error loading owner data.')
             finally:
@@ -1273,7 +1329,7 @@ class editinf(QDialog):
             self.owerrormes.setText('Database connection failed.')
     
     def loadpets(self):
-        """Load pets for the current owner into the table."""
+        """Show this owner's pets in the table."""
         if self.current_owner_id is None:
             return
             
@@ -1282,37 +1338,37 @@ class editinf(QDialog):
             try:
                 cursor = conn.cursor()
                 
-                # Get all pets for this owner with breed information
+                # Grab all pets for this owner, plus breed and size
                 cursor.execute("""
                     SELECT p.pet_id, p.name, p.age, p.sex, p.weight_kg, 
-                           GROUP_CONCAT(b.breed_name, ', ') as breeds,
+                           GROUP_CONCAT(b.breed_name SEPARATOR ', ') as breeds,
                            sc.size_name
                     FROM pets p
                     LEFT JOIN pet_breed_junction pbj ON p.pet_id = pbj.pet_id
                     LEFT JOIN breeds b ON pbj.breed_id = b.breed_id
                     LEFT JOIN size_category sc ON p.actual_size_id = sc.size_id
-                    WHERE p.owner_id = ?
+                    WHERE p.owner_id = %s
                     GROUP BY p.pet_id
                     ORDER BY p.pet_id
                 """, (self.current_owner_id,))
                 
                 pets = cursor.fetchall()
                 
-                # Set up table
+                # Basic table setup
                 self.petlist.setRowCount(len(pets))
                 self.petlist.setColumnCount(7)
                 self.petlist.setHorizontalHeaderLabels(['ID', 'Name', 'Age', 'Sex', 'Weight (kg)', 'Breed', 'Size'])
                 
-                # Populate table
+                # Fill the rows
                 for row, pet in enumerate(pets):
                     for col, value in enumerate(pet):
                         item = QtWidgets.QTableWidgetItem(str(value) if value is not None else '')
                         self.petlist.setItem(row, col, item)
                 
-                # Resize columns to fit content
+                # Make columns wide enough so stuff is readable
                 self.petlist.resizeColumnsToContents()
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading pets: {err}")
                 self.editerrormess.setText('Error loading pets.')
             finally:
@@ -1320,7 +1376,7 @@ class editinf(QDialog):
                     conn.close()
     
     def saveownerinfo(self):
-        """Save the owner's information to the database."""
+        """Save whatever the user typed for this owner."""
         if self.current_owner_id is None:
             self.owerrormes.setText('No owner selected.')
             return
@@ -1332,7 +1388,7 @@ class editinf(QDialog):
         
         self.owerrormes.setText('')
         
-        # Validate required fields
+        # Make sure we at least have a first + last name
         if not first_name or not last_name:
             self.owerrormes.setText('First and Last name are required.')
             return
@@ -1342,25 +1398,25 @@ class editinf(QDialog):
             try:
                 cursor = conn.cursor()
                 
-                # Update owner information
+                # Save updated owner fields
                 sql = """
                     UPDATE owners 
-                    SET first_name = ?, last_name = ?, email = ?, contact_number = ?
-                    WHERE owner_id = ?
+                    SET first_name = %s, last_name = %s, email = %s, contact_number = %s
+                    WHERE owner_id = %s
                 """
                 cursor.execute(sql, (first_name, last_name, email, contact_number, self.current_owner_id))
                 conn.commit()
                 
-                # Verify the update was successful
-                cursor.execute("SELECT owner_id FROM owners WHERE owner_id = ? AND first_name = ? AND last_name = ?",
+                # Double-check that the update really went through
+                cursor.execute("SELECT owner_id FROM owners WHERE owner_id = %s AND first_name = %s AND last_name = %s",
                              (self.current_owner_id, first_name, last_name))
                 if cursor.fetchone():
                     print(f"Owner information successfully updated for ID: {self.current_owner_id}")
                     self.owerrormes.setText('Owner information saved successfully!')
                 else:
-                    raise sqlite3.Error("Update verification failed")
+                    raise Error("Update verification failed")
                     
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Database UPDATE Error (Owner): {err}")
                 if conn:
                     conn.rollback()
@@ -1377,12 +1433,12 @@ class editinf(QDialog):
             self.owerrormes.setText('Database connection failed.')
     
     def editpet(self):
-        """Show a popup dialog to select a pet to edit."""
+        """Pop up a small window to pick which pet to edit."""
         if self.current_owner_id is None:
             self.editerrormess.setText('No owner found. Please register first.')
             return
         
-        # Get list of pets for this owner
+        # Get all pets for this owner so we can list them
         conn = get_db_connection()
         if not conn:
             self.editerrormess.setText('Database connection failed.')
@@ -1393,7 +1449,7 @@ class editinf(QDialog):
             cursor.execute("""
                 SELECT pet_id, name 
                 FROM pets 
-                WHERE owner_id = ?
+                WHERE owner_id = %s
                 ORDER BY name
             """, (self.current_owner_id,))
             
@@ -1404,7 +1460,7 @@ class editinf(QDialog):
                 conn.close()
                 return
             
-            # Create a dialog with combo box
+            # Tiny dialog with a combo box so user can pick a pet
             dialog = QDialog(self)
             dialog.setWindowTitle("Select Pet to Edit")
             dialog.setModal(True)
@@ -1434,12 +1490,12 @@ class editinf(QDialog):
                 selected_pet_id = pet_dict.get(selected_text)
                 
                 if selected_pet_id:
-                    # Navigate to edit pet screen
+                    # Go to the full edit-pet screen
                     editpet = editpetscreen(selected_pet_id, self.current_owner_id)
                     widget.addWidget(editpet)
                     widget.setCurrentIndex(widget.currentIndex() + 1)
             
-        except sqlite3.Error as err:
+        except Error as err:
             print(f"Error loading pets for selection: {err}")
             self.editerrormess.setText('Error loading pets.')
         finally:
@@ -1447,12 +1503,12 @@ class editinf(QDialog):
                 conn.close()
     
     def deletepet(self):
-        """Show a popup dialog to select a pet to delete."""
+        """Pop up a small window to pick which pet to delete."""
         if self.current_owner_id is None:
             self.editerrormess.setText('No owner found. Please register first.')
             return
         
-        # Get list of pets for this owner
+        # Same idea: list the pets for this owner
         conn = get_db_connection()
         if not conn:
             self.editerrormess.setText('Database connection failed.')
@@ -1463,7 +1519,7 @@ class editinf(QDialog):
             cursor.execute("""
                 SELECT pet_id, name 
                 FROM pets 
-                WHERE owner_id = ?
+                WHERE owner_id = %s
                 ORDER BY name
             """, (self.current_owner_id,))
             
@@ -1474,7 +1530,7 @@ class editinf(QDialog):
                 conn.close()
                 return
             
-            # Create a dialog with combo box
+            # Small dialog with a dropdown of pets
             dialog = QDialog(self)
             dialog.setWindowTitle("Select Pet to Delete")
             dialog.setModal(True)
@@ -1510,39 +1566,39 @@ class editinf(QDialog):
                     conn.close()
                     return
                 
-                # Extract pet name from the display text
+                # Pull just the name part from the text we showed
                 pet_name = selected_text.split(' (ID:')[0] if ' (ID:' in selected_text else 'Unknown'
             
             conn.close()
             
-            # Delete the pet with a new connection
+            # Actually delete the pet (and related rows) using a fresh connection
             if pet_id and pet_name:
                 conn = get_db_connection()
                 if conn:
                     try:
                         cursor = conn.cursor()
                         
-                        # Delete from pet_breed_junction first (foreign key constraint)
-                        cursor.execute("DELETE FROM pet_breed_junction WHERE pet_id = ?", (pet_id,))
+                        # Clear out breed links first (keeps FK happy)
+                        cursor.execute("DELETE FROM pet_breed_junction WHERE pet_id = %s", (pet_id,))
                         
-                        # Delete from pet_event_entry
-                        cursor.execute("DELETE FROM pet_event_entry WHERE pet_id = ?", (pet_id,))
+                        # Then any event entries
+                        cursor.execute("DELETE FROM pet_event_entry WHERE pet_id = %s", (pet_id,))
                         
-                        # Delete from awards
-                        cursor.execute("DELETE FROM awards WHERE pet_id = ?", (pet_id,))
+                        # And any awards tied to this pet
+                        cursor.execute("DELETE FROM awards WHERE pet_id = %s", (pet_id,))
                         
-                        # Delete the pet
-                        cursor.execute("DELETE FROM pets WHERE pet_id = ?", (pet_id,))
+                        # Finally, remove the pet itself
+                        cursor.execute("DELETE FROM pets WHERE pet_id = %s", (pet_id,))
                         
                         conn.commit()
                         
                         print(f"Pet {pet_name} (ID: {pet_id}) successfully deleted.")
                         self.editerrormess.setText(f'Pet {pet_name} deleted successfully.')
                         
-                        # Reload the pets table
+                        # Refresh the pets table on screen
                         self.loadpets()
                         
-                    except sqlite3.Error as err:
+                    except Error as err:
                         print(f"Database DELETE Error (Pet): {err}")
                         if conn:
                             conn.rollback()
@@ -1558,7 +1614,7 @@ class editinf(QDialog):
                 else:
                     self.editerrormess.setText('Database connection failed.')
             
-        except sqlite3.Error as err:
+        except Error as err:
             print(f"Error loading pets for selection: {err}")
             self.editerrormess.setText('Error loading pets.')
             if conn:
@@ -1569,15 +1625,15 @@ class editinf(QDialog):
                 conn.close()
         
     def saveinf(self):
-        """Save all information and navigate to success screen."""
-        # Save owner info first
+        """Save everything on this page, then move to the success screen."""
+        # Try saving owner info first
         self.saveownerinfo()
         
-        # Check if save was successful (no error message means success)
+        # If there are no error messages, we assume it went fine
         if not self.owerrormes.text() or 'successfully' in self.owerrormes.text():
             self.gotoinfoedited()
         else:
-            # If there was an error, don't navigate away
+            # If something went wrong, stay here and show a hint
             self.editerrormess.setText('Please fix errors before saving.')
 
     def gotommenu(self):
@@ -1615,25 +1671,25 @@ class editpetscreen(QDialog):
         self.loadpetdata()
         
     def loadpetdata(self):
-        """Load the pet's current information into the form fields."""
+        """Load this pet's current info into the form so we can tweak it."""
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
                 
-                # Get pet details
+                # First, pull the main pet details
                 cursor.execute("""
                     SELECT p.name, p.age, p.sex, p.weight_kg, p.actual_size_id, 
                            p.muzzle_required, p.notes, sc.size_name
                     FROM pets p
                     LEFT JOIN size_category sc ON p.actual_size_id = sc.size_id
-                    WHERE p.pet_id = ?
+                    WHERE p.pet_id = %s
                 """, (self.pet_id,))
                 
                 pet_data = cursor.fetchone()
                 
                 if pet_data:
-                    # Set pet information
+                    # Push basic pet info into the widgets
                     self.petname.setText(pet_data[0] or '')
                     self.petage.setValue(pet_data[1] or 0)
                     
@@ -1650,7 +1706,7 @@ class editpetscreen(QDialog):
                     if size_index >= 0:
                         self.petsize.setCurrentIndex(size_index)
                     
-                    # Set muzzle required
+                    # Flip the muzzle radio buttons
                     if pet_data[5] == 1:
                         self.muzzleyes.setChecked(True)
                     else:
@@ -1658,12 +1714,12 @@ class editpetscreen(QDialog):
                     
                     self.petnotes.setPlainText(pet_data[6] or '')
                     
-                    # Get breed
+                    # Now grab the first breed we find (if any)
                     cursor.execute("""
                         SELECT b.breed_name 
                         FROM breeds b
                         JOIN pet_breed_junction pbj ON b.breed_id = pbj.breed_id
-                        WHERE pbj.pet_id = ?
+                        WHERE pbj.pet_id = %s
                         LIMIT 1
                     """, (self.pet_id,))
                     
@@ -1671,11 +1727,11 @@ class editpetscreen(QDialog):
                     if breed_result:
                         self.petbreed.setText(breed_result[0] or '')
                     
-                    # Get owner name for display
+                    # Show the owner name at the top
                     cursor.execute("""
                         SELECT first_name, last_name 
                         FROM owners 
-                        WHERE owner_id = ?
+                        WHERE owner_id = %s
                     """, (self.owner_id,))
                     
                     owner_result = cursor.fetchone()
@@ -1683,7 +1739,7 @@ class editpetscreen(QDialog):
                         owner_name = f"{owner_result[0]} {owner_result[1]}"
                         self.owerusername.setText(owner_name)
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading pet data: {err}")
                 self.petregiserr.setText('Error loading pet data.')
             finally:
@@ -1693,7 +1749,7 @@ class editpetscreen(QDialog):
             self.petregiserr.setText('Database connection failed.')
     
     def savepetinfo(self):
-        """Save the updated pet information to the database."""
+        """Save updated pet info back into the database."""
         petname = self.petname.text().strip()
         petage = self.petage.value()
         petsex = self.petsex.currentText().strip()
@@ -1704,7 +1760,7 @@ class editpetscreen(QDialog):
         
         self.petregiserr.setText('')
         
-        # Validate required fields
+        # Quick sanity check on required fields
         if not petname or petage == 0 or not petbreed:
             self.petregiserr.setText('Please fill in Pet Name, Age (must be > 0), and Breed.')
             return
@@ -1719,44 +1775,44 @@ class editpetscreen(QDialog):
             try:
                 cursor = conn.cursor()
                 
-                # Update pet information
+                # Update the core pet record
                 sql_pet = """
                     UPDATE pets 
-                    SET name = ?, actual_size_id = ?, age = ?, sex = ?, 
-                        weight_kg = ?, muzzle_required = ?, notes = ?
-                    WHERE pet_id = ?
+                    SET name = %s, actual_size_id = %s, age = %s, sex = %s, 
+                        weight_kg = %s, muzzle_required = %s, notes = %s
+                    WHERE pet_id = %s
                 """
                 cursor.execute(sql_pet, (
                     petname, actual_size_id, petage, petsex, 
                     petweight, muzzle_required, petnotes, self.pet_id
                 ))
                 
-                # Handle breed update
-                sql_breed_lookup = "SELECT breed_id FROM breeds WHERE breed_name = ?"
+                # Deal with the breed: reuse if it exists, otherwise make a new one
+                sql_breed_lookup = "SELECT breed_id FROM breeds WHERE breed_name = %s"
                 cursor.execute(sql_breed_lookup, (petbreed,))
                 breed_result = cursor.fetchone()
                 
                 if breed_result:
                     breed_id = breed_result[0]
                 else:
-                    # Create new breed if it doesn't exist
+                    # No existing breed, so we add it
                     cursor.execute("SELECT MAX(breed_id) FROM breeds")
                     max_breed_id = cursor.fetchone()[0]
                     new_breed_id = max(16, (max_breed_id if max_breed_id is not None else 0) + 1)
                     
-                    sql_insert_breed = "INSERT INTO breeds (breed_id, breed_name, size_id) VALUES (?, ?, ?)"
+                    sql_insert_breed = "INSERT INTO breeds (breed_id, breed_name, size_id) VALUES (%s, %s, %s)"
                     cursor.execute(sql_insert_breed, (new_breed_id, petbreed, 3))
                     breed_id = new_breed_id
                 
-                # Update pet_breed_junction (delete old, insert new)
-                cursor.execute("DELETE FROM pet_breed_junction WHERE pet_id = ?", (self.pet_id,))
-                cursor.execute("INSERT INTO pet_breed_junction (pet_id, breed_id) VALUES (?, ?)", 
+                # Reset the breed link for this pet
+                cursor.execute("DELETE FROM pet_breed_junction WHERE pet_id = %s", (self.pet_id,))
+                cursor.execute("INSERT INTO pet_breed_junction (pet_id, breed_id) VALUES (%s, %s)", 
                              (self.pet_id, breed_id))
                 
                 conn.commit()
                 
-                # Verify the update was successful
-                cursor.execute("SELECT pet_id FROM pets WHERE pet_id = ? AND name = ?",
+                # Just make sure the update really stuck
+                cursor.execute("SELECT pet_id FROM pets WHERE pet_id = %s AND name = %s",
                              (self.pet_id, petname))
                 if cursor.fetchone():
                     print(f"Pet information successfully updated for ID: {self.pet_id}")
@@ -1764,9 +1820,9 @@ class editpetscreen(QDialog):
                     # Return to editinf screen after a short delay or immediately
                     self.gotoeditinf()
                 else:
-                    raise sqlite3.Error("Update verification failed")
+                    raise Error("Update verification failed")
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Database UPDATE Error (Pet): {err}")
                 if conn:
                     conn.rollback()
@@ -1809,21 +1865,21 @@ class viewevents(QDialog):
         loadUi('./gui/viewevents.ui', self)
         self.veventexitbutt.clicked.connect(self.gotommenu)
         
-        # Get error message label
+        # Grab the labels we use for quick error messages
         self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes')
         self.editerrormess = self.findChild(QtWidgets.QLabel, 'editerrormess')
         
-        # Load events into the table
+        # Fill the table with events
         self.load_events()
 
     def load_events(self):
-        """Load all events from the database into the eventlist table."""
+        """Pull all events from the DB and show them in the table."""
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
                 
-                # Get all events with size category names
+                # Get all events plus their size ranges (if any)
                 cursor.execute("""
                     SELECT e.event_id, e.name, e.date, e.time, e.location, 
                            e.type, e.max_participants, e.registration_deadline,
@@ -1838,9 +1894,7 @@ class viewevents(QDialog):
                 
                 events = cursor.fetchall()
                 
-                # Set up table with columns
-                # Columns: ID, Name, Date, Time, Location, Type, Status, Max Participants, 
-                #          Deadline, Fee, Discount, Distance, Time Limit, Weight Range, Size Range
+                # Set up table with columns we want to show
                 self.eventlist.setRowCount(len(events))
                 self.eventlist.setColumnCount(15)
                 self.eventlist.setHorizontalHeaderLabels([
@@ -1854,23 +1908,27 @@ class viewevents(QDialog):
                 for row, event in enumerate(events):
                     event_id = event[0]
                     name = event[1] or ''
-                    date = event[2] or ''
-                    time = event[3] or ''
+                    date_value = event[2]
+                    date_str = format_date_string(date_value)
+                    time_value = event[3]
+                    time_str = str(time_value) if time_value not in (None, '') else ''
                     location = event[4] or ''
                     event_type = event[5] or ''
-                    max_participants = event[6] or 0
-                    deadline = event[7] or ''
+                    max_participants = int(event[6]) if event[6] is not None else 0
+                    deadline_str = format_date_string(event[7])
                     status = 'Open' if event[8] == 1 else 'Closed'
-                    base_fee = event[9] or 0.0
-                    discount = event[10] or 0.0
+                    base_fee = float(event[9]) if event[9] is not None else 0.0
+                    discount = float(event[10]) if event[10] is not None else 0.0
                     distance = event[11] if event[11] is not None else 'N/A'
                     time_limit = event[12] if event[12] is not None else 'N/A'
                     
                     # Weight range
-                    min_weight = event[13] if event[13] is not None else ''
-                    max_weight = event[14] if event[14] is not None else ''
-                    if min_weight or max_weight:
-                        weight_range = f"{min_weight if min_weight else 'Any'}-{max_weight if max_weight else 'Any'} kg"
+                    min_weight = float(event[13]) if event[13] is not None else None
+                    max_weight = float(event[14]) if event[14] is not None else None
+                    if min_weight is not None or max_weight is not None:
+                        min_weight_text = f"{min_weight:.2f}" if min_weight is not None else 'Any'
+                        max_weight_text = f"{max_weight:.2f}" if max_weight is not None else 'Any'
+                        weight_range = f"{min_weight_text}-{max_weight_text} kg"
                     else:
                         weight_range = 'Any'
                     
@@ -1885,13 +1943,13 @@ class viewevents(QDialog):
                     # Set items in table
                     self.eventlist.setItem(row, 0, QtWidgets.QTableWidgetItem(str(event_id)))
                     self.eventlist.setItem(row, 1, QtWidgets.QTableWidgetItem(name))
-                    self.eventlist.setItem(row, 2, QtWidgets.QTableWidgetItem(date))
-                    self.eventlist.setItem(row, 3, QtWidgets.QTableWidgetItem(time))
+                    self.eventlist.setItem(row, 2, QtWidgets.QTableWidgetItem(date_str))
+                    self.eventlist.setItem(row, 3, QtWidgets.QTableWidgetItem(time_str))
                     self.eventlist.setItem(row, 4, QtWidgets.QTableWidgetItem(location))
                     self.eventlist.setItem(row, 5, QtWidgets.QTableWidgetItem(event_type))
                     self.eventlist.setItem(row, 6, QtWidgets.QTableWidgetItem(status))
                     self.eventlist.setItem(row, 7, QtWidgets.QTableWidgetItem(str(max_participants)))
-                    self.eventlist.setItem(row, 8, QtWidgets.QTableWidgetItem(deadline))
+                    self.eventlist.setItem(row, 8, QtWidgets.QTableWidgetItem(deadline_str))
                     self.eventlist.setItem(row, 9, QtWidgets.QTableWidgetItem(f"₱{base_fee:.2f}"))
                     self.eventlist.setItem(row, 10, QtWidgets.QTableWidgetItem(f"₱{discount:.2f}"))
                     self.eventlist.setItem(row, 11, QtWidgets.QTableWidgetItem(str(distance)))
@@ -1905,7 +1963,7 @@ class viewevents(QDialog):
                 # Set alternating row colors for better readability
                 self.eventlist.setAlternatingRowColors(True)
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading events: {err}")
                 if self.owerrormes:
                     self.owerrormes.setText('Error loading events.')
@@ -1927,6 +1985,138 @@ class viewevents(QDialog):
 
 # --------------------------------------------------------------------------------------------------------------------
 
+class yourstatuss(QDialog):
+    def __init__(self):
+        super(yourstatuss, self).__init__()
+        loadUi('./gui/status.ui', self)
+        self.exitbutt.clicked.connect(self.gotommenu)
+        self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes')
+        self.editerrormess = self.findChild(QtWidgets.QLabel, 'editerrormess')
+        self.status_table = self.findChild(QtWidgets.QTableWidget, 'yourstatus')
+        self.current_owner_id = None
+        self.owner_name = ''
+        self.configure_table()
+        self.load_owner_data()
+        self.populate_status_table()
+
+    def configure_table(self):
+        if not self.status_table:
+            return
+        headers = ['Owner', 'Pet', 'Breed', 'Size', 'Event', 'Event Date', 'Event Time', 'Status']
+        self.status_table.setColumnCount(len(headers))
+        self.status_table.setHorizontalHeaderLabels(headers)
+        header = self.status_table.horizontalHeader()
+        if header:
+            header.setStretchLastSection(True)
+            header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+        vheader = self.status_table.verticalHeader()
+        if vheader:
+            vheader.setVisible(False)
+            vheader.setDefaultSectionSize(28)
+
+    def load_owner_data(self):
+        conn = get_db_connection()
+        if conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute("SELECT MAX(owner_id) FROM owners")
+                result = cursor.fetchone()
+                if result and result[0] is not None:
+                    self.current_owner_id = result[0]
+                    cursor.execute("""
+                        SELECT first_name, last_name 
+                        FROM owners 
+                        WHERE owner_id = %s
+                    """, (self.current_owner_id,))
+                    owner_data = cursor.fetchone()
+                    if owner_data:
+                        self.owner_name = f"{owner_data[0]} {owner_data[1]}".strip()
+                else:
+                    if self.owerrormes:
+                        self.owerrormes.setText('No owner found. Please register first.')
+            except Error as err:
+                print(f"Error loading owner data (status): {err}")
+                if self.owerrormes:
+                    self.owerrormes.setText('Error loading owner data.')
+            finally:
+                conn.close()
+        else:
+            if self.owerrormes:
+                self.owerrormes.setText('Database connection failed.')
+
+    def populate_status_table(self):
+        if not self.status_table:
+            return
+        if self.current_owner_id is None:
+            self.status_table.setRowCount(0)
+            return
+
+        conn = get_db_connection()
+        if conn:
+            try:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT o.first_name, o.last_name,
+                           p.name AS pet_name,
+                           GROUP_CONCAT(DISTINCT b.breed_name SEPARATOR ', ') AS breeds,
+                           sc.size_name,
+                           e.name AS event_name,
+                           e.date,
+                           e.time,
+                           COALESCE(er.status, 'Not Registered') AS status_text
+                    FROM owners o
+                    LEFT JOIN pets p ON p.owner_id = o.owner_id
+                    LEFT JOIN pet_breed_junction pbj ON p.pet_id = pbj.pet_id
+                    LEFT JOIN breeds b ON pbj.breed_id = b.breed_id
+                    LEFT JOIN size_category sc ON p.actual_size_id = sc.size_id
+                    LEFT JOIN pet_event_entry pee ON p.pet_id = pee.pet_id
+                    LEFT JOIN events e ON pee.event_id = e.event_id
+                    LEFT JOIN event_registration er ON pee.registration_id = er.registration_id
+                    WHERE o.owner_id = %s
+                    GROUP BY o.owner_id, p.pet_id, pee.event_id, er.status, e.date, e.time
+                    ORDER BY (e.date IS NULL), e.date, p.name
+                """, (self.current_owner_id,))
+                rows = cursor.fetchall()
+
+                if rows:
+                    self.status_table.setRowCount(len(rows))
+                    for row_idx, row in enumerate(rows):
+                        owner_name = f"{row[0]} {row[1]}".strip() or (self.owner_name or 'Owner')
+                        pet_name = row[2] or 'No pet'
+                        breed = row[3] or 'N/A'
+                        size = row[4] or 'N/A'
+                        event_name = row[5] or 'Not enrolled'
+                        event_date = format_date_string(row[6])
+                        event_time = str(row[7]) if row[7] not in (None, '') else ''
+                        status_text = row[8] or 'Pending'
+
+                        values = [owner_name, pet_name, breed, size, event_name, event_date, event_time, status_text]
+                        for col, value in enumerate(values):
+                            self.status_table.setItem(row_idx, col, QtWidgets.QTableWidgetItem(str(value)))
+                else:
+                    self.status_table.setRowCount(1)
+                    self.status_table.setItem(0, 0, QtWidgets.QTableWidgetItem(self.owner_name or 'Owner'))
+                    self.status_table.setItem(0, 1, QtWidgets.QTableWidgetItem('No pets registered yet.'))
+                    for col in range(2, self.status_table.columnCount()):
+                        self.status_table.setItem(0, col, QtWidgets.QTableWidgetItem('N/A'))
+
+            except Error as err:
+                print(f"Error loading status data: {err}")
+                if self.owerrormes:
+                    self.owerrormes.setText('Failed to load status information.')
+            finally:
+                conn.close()
+        else:
+            if self.owerrormes:
+                self.owerrormes.setText('Database connection failed.')
+
+    def gotommenu(self):
+        mmenu = mainmenu()
+        widget.addWidget(mmenu)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
+# --------------------------------------------------------------------------------------------------------------------
+
 class entries(QDialog):
     def __init__(self):
         super(entries, self).__init__()
@@ -1935,17 +2125,17 @@ class entries(QDialog):
         self.transferbutt.clicked.connect(self.gototransfer)
         self.withdrawbutt.clicked.connect(self.gotowithdraw)
         
-        # Get UI components
+        # Quick handles for labels we might update
         self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes')
         
-        # Connect event selection
+        # When event changes in the dropdown, refresh the details
         self.vieweventsel.currentIndexChanged.connect(self.on_event_selected)
         
-        # Load events
+        # Initially load all visible events into the dropdown
         self.load_events()
         
     def load_events(self):
-        """Load all events into the combo box."""
+        """Grab all open events and stuff them into the dropdown."""
         conn = get_db_connection()
         if conn:
             try:
@@ -1972,7 +2162,7 @@ class entries(QDialog):
                         'date': event[2],
                         'time': event[3]
                     }
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading events: {err}")
                 self.owerrormes.setText('Error loading events.')
             finally:
@@ -1980,7 +2170,7 @@ class entries(QDialog):
                     conn.close()
     
     def on_event_selected(self):
-        """Handle event selection and load participants."""
+        """When you pick an event, show its date and list of participants."""
         selected_text = self.vieweventsel.currentText()
         if not selected_text or selected_text not in self.event_dict:
             self.eventdate.clear()
@@ -1990,16 +2180,16 @@ class entries(QDialog):
         event = self.event_dict[selected_text]
         event_id = event['event_id']
         
-        # Display event date
+        # Show the date and time in the small list widget
         self.eventdate.clear()
         self.eventdate.addItem(f"Date: {event['date']}")
         self.eventdate.addItem(f"Time: {event['time']}")
         
-        # Load participants for this event
+        # Then load everyone registered for this event
         self.load_participants(event_id)
     
     def load_participants(self, event_id):
-        """Load all participants for the selected event."""
+        """Fill the participants table for the chosen event."""
         conn = get_db_connection()
         if conn:
             try:
@@ -2014,7 +2204,7 @@ class entries(QDialog):
                     JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
                     JOIN pets p ON pee.pet_id = p.pet_id
                     LEFT JOIN size_category sc ON p.actual_size_id = sc.size_id
-                    WHERE er.event_id = ? AND er.status = 'Paid'
+                    WHERE er.event_id = %s AND er.status = 'Paid'
                     ORDER BY er.registration_date, o.last_name, o.first_name
                 """, (event_id,))
                 
@@ -2038,7 +2228,7 @@ class entries(QDialog):
                 # Resize columns to fit content
                 self.eventsparticipants.resizeColumnsToContents()
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading participants: {err}")
                 self.owerrormes.setText('Error loading participants.')
             finally:
@@ -2084,12 +2274,12 @@ class transfer(QDialog):
         self.transexit.clicked.connect(self.gotoentries)
         self.tranferconbuut.clicked.connect(self.process_transfer)
         
-        # Get UI components
+        # Grab some handy labels so we can show messages
         self.petregiserr = self.findChild(QtWidgets.QLabel, 'petregiserr')
         self.petwarningsize = self.findChild(QtWidgets.QLabel, 'petwarningsize')
         self.owerusername = self.findChild(QtWidgets.QLabel, 'owerusername')
         
-        # Store data
+        # Stuff we keep around while you're on this screen
         self.current_owner_id = None
         self.selected_registration_id = None
         self.selected_pet_id = None
@@ -2097,16 +2287,16 @@ class transfer(QDialog):
         self.event_from_dict = {}
         self.event_to_dict = {}
         
-        # Connect combo box signals
+        # React when user changes either of the dropdowns
         self.eventfrom.currentIndexChanged.connect(self.on_event_from_selected)
         self.transferto.currentIndexChanged.connect(self.on_event_to_selected)
         
-        # Load data
+        # Kick things off by loading owner details and their events
         self.load_owner_data()
         self.load_enrolled_events(preselected_event_id)
     
     def load_owner_data(self):
-        """Load the current owner's information."""
+        """Get the latest owner and show their name at the top."""
         conn = get_db_connection()
         if conn:
             try:
@@ -2121,21 +2311,21 @@ class transfer(QDialog):
                     cursor.execute("""
                         SELECT first_name, last_name 
                         FROM owners 
-                        WHERE owner_id = ?
+                        WHERE owner_id = %s
                     """, (self.current_owner_id,))
                     
                     owner_data = cursor.fetchone()
                     if owner_data:
                         owner_name = f"{owner_data[0]} {owner_data[1]}"
                         self.owerusername.setText(owner_name)
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading owner data: {err}")
             finally:
                 if conn:
                     conn.close()
     
     def load_enrolled_events(self, preselected_event_id=None):
-        """Load events the current owner is enrolled in."""
+        """List the events this owner is currently paid/enrolled in."""
         if self.current_owner_id is None:
             return
         
@@ -2148,7 +2338,7 @@ class transfer(QDialog):
                            e.base_registration_fee, e.extra_pet_discount
                     FROM event_registration er
                     JOIN events e ON er.event_id = e.event_id
-                    WHERE er.owner_id = ? AND er.status = 'Paid'
+                    WHERE er.owner_id = %s AND er.status = 'Paid'
                     ORDER BY e.date, e.time
                 """, (self.current_owner_id,))
                 
@@ -2173,7 +2363,7 @@ class transfer(QDialog):
                         'extra_pet_discount': reg[6]
                     }
                 
-                # If only one event, automatically select it
+                # If there's only one option, just auto-select it for convenience
                 if len(registrations) == 1:
                     # Always select the first (and only) item
                     index = 0
@@ -2181,7 +2371,7 @@ class transfer(QDialog):
                     from PyQt6.QtCore import QTimer
                     QTimer.singleShot(0, lambda: self._select_event_from(index))
                 elif preselected_event_id:
-                    # Select preselected event if provided
+                    # If we came here from Entries with a specific event, pick that one
                     for text, data in self.event_from_dict.items():
                         if data['event_id'] == preselected_event_id:
                             index = self.eventfrom.findText(text)
@@ -2190,7 +2380,7 @@ class transfer(QDialog):
                                 QTimer.singleShot(0, lambda idx=index: self._select_event_from(idx))
                             break
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading enrolled events: {err}")
                 self.petregiserr.setText('Error loading enrolled events.')
             finally:
@@ -2198,9 +2388,9 @@ class transfer(QDialog):
                     conn.close()
     
     def _select_event_from(self, index):
-        """Helper method to select event from combo box and trigger handler."""
+        """Tiny helper to safely set the combo index and trigger the handler."""
         if index >= 0 and index < self.eventfrom.count():
-            # Temporarily disconnect signal to avoid double-trigger
+            # Temporarily disconnect so we don't fire the slot twice
             try:
                 self.eventfrom.currentIndexChanged.disconnect()
             except:
@@ -2208,14 +2398,14 @@ class transfer(QDialog):
             
             self.eventfrom.setCurrentIndex(index)
             
-            # Reconnect signal
+            # Put the signal back
             self.eventfrom.currentIndexChanged.connect(self.on_event_from_selected)
             
-            # Manually trigger to load data
+            # And now manually load the data for that selection
             self.on_event_from_selected()
     
     def on_event_from_selected(self):
-        """Handle event from selection."""
+        """When the 'from' event changes, refresh pet list and details."""
         selected_text = self.eventfrom.currentText()
         if not selected_text or selected_text not in self.event_from_dict:
             self.petandowner.clear()
@@ -2229,17 +2419,17 @@ class transfer(QDialog):
         self.selected_registration_id = event_data['registration_id']
         event_id = event_data['event_id']
         
-        # Load pets and owners for this registration
+        # Show owner + pets for this registration
         self.load_pets_and_owners()
         
-        # Load transferable events (all events except current)
+        # Fill the 'transfer to' dropdown, skipping events we can't move to
         self.load_transferable_events()
         
-        # Display current entry details
+        # Show a quick summary for the current event
         self.display_current_entry(event_data)
     
     def load_pets_and_owners(self):
-        """Load pets and owners for the selected registration."""
+        """Show which pets (and owner) are attached to this registration."""
         if not self.selected_registration_id:
             self.petandowner.clear()
             return
@@ -2254,22 +2444,22 @@ class transfer(QDialog):
                     JOIN owners o ON er.owner_id = o.owner_id
                     JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
                     JOIN pets p ON pee.pet_id = p.pet_id
-                    WHERE er.registration_id = ?
+                    WHERE er.registration_id = %s
                     ORDER BY p.name
                 """, (self.selected_registration_id,))
                 
                 results = cursor.fetchall()
                 self.petandowner.clear()
-                self.selected_pet_ids = []  # Store all pet IDs
+                self.selected_pet_ids = []  # track every pet ID in this registration
                 
                 if results:
-                    # Get owner name from first result (all should be same owner)
+                    # Owner is the same for all rows, so we just use the first
                     owner_first, owner_last, _, _ = results[0]
                     owner_name = f"{owner_first} {owner_last}"
                     self.petandowner.addItem(f"Owner: {owner_name}")
                     self.petandowner.addItem("")  # Empty line
                     
-                    # Add all pets
+                    # Add each pet on its own line
                     for owner_first, owner_last, pet_name, pet_id in results:
                         self.petandowner.addItem(f"Pet: {pet_name}")
                         self.selected_pet_ids.append(pet_id)
@@ -2278,11 +2468,11 @@ class transfer(QDialog):
                 else:
                     self.petandowner.addItem("No pets found for this registration")
                 
-                # Use first pet_id for transfer operations
+                # Default to the first pet if we ever need a single one
                 if self.selected_pet_ids:
                     self.selected_pet_id = self.selected_pet_ids[0]
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading pets and owners: {err}")
                 self.petregiserr.setText(f'Error loading pets: {err}')
             finally:
@@ -2292,13 +2482,13 @@ class transfer(QDialog):
             self.petregiserr.setText('Database connection failed.')
     
     def load_transferable_events(self):
-        """Load events that can be transferred to (all events except current, payment handled separately)."""
-        # Get current event_id to exclude it
+        """Figure out which other events we can move this entry to."""
+        # Start by noting the current event so we can skip it
         current_event_id = None
         if self.eventfrom.currentText() and self.eventfrom.currentText() in self.event_from_dict:
             current_event_id = self.event_from_dict[self.eventfrom.currentText()]['event_id']
         
-        # Also check if pet is already registered to any events to prevent duplicate registrations
+        # Also note any events this pet is already in so we don't double-book
         pet_ids_to_check = self.selected_pet_ids if hasattr(self, 'selected_pet_ids') and self.selected_pet_ids else []
         if hasattr(self, 'selected_pet_id') and self.selected_pet_id and self.selected_pet_id not in pet_ids_to_check:
             pet_ids_to_check.append(self.selected_pet_id)
@@ -2308,13 +2498,13 @@ class transfer(QDialog):
             try:
                 cursor = conn.cursor()
                 
-                # Get events excluding current event
+                # Query all open events, except the one we're currently in
                 if current_event_id:
                     cursor.execute("""
                         SELECT event_id, name, date, time, base_registration_fee,
                                extra_pet_discount, max_participants
                         FROM events 
-                        WHERE status = 1 AND event_id != ?
+                        WHERE status = 1 AND event_id != %s
                         ORDER BY date, time
                     """, (current_event_id,))
                 else:
@@ -2330,10 +2520,10 @@ class transfer(QDialog):
                 self.transferto.clear()
                 self.event_to_dict = {}
                 
-                # Check which events the pets are already registered for
+                # Build a set of events where these pets are already registered
                 already_registered_events = set()
                 if pet_ids_to_check:
-                    placeholders = ','.join(['?'] * len(pet_ids_to_check))
+                    placeholders = ','.join(['%s'] * len(pet_ids_to_check))
                     cursor.execute(f"""
                         SELECT DISTINCT pee.event_id
                         FROM pet_event_entry pee
@@ -2346,8 +2536,7 @@ class transfer(QDialog):
                     event_id = event[0]
                     event_name = event[1]
                     
-                    # Skip events where pets are already registered (unless it's the current event)
-                    # This prevents transferring to an event the pet is already registered for
+                    # Skip events that already have this pet, unless it's the current one
                     if event_id in already_registered_events and event_id != current_event_id:
                         continue
                     
@@ -2365,7 +2554,7 @@ class transfer(QDialog):
                 
                 print(f"Loaded {len(self.event_to_dict)} transferable events")
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading transferable events: {err}")
                 self.petregiserr.setText(f'Error loading events: {err}')
             finally:
@@ -2375,7 +2564,7 @@ class transfer(QDialog):
             self.petregiserr.setText('Database connection failed.')
     
     def display_current_entry(self, event_data):
-        """Display current entry details."""
+        """Show a simple summary for the current event/registration."""
         self.currententry.clear()
         
         if not self.selected_registration_id:
@@ -2385,7 +2574,7 @@ class transfer(QDialog):
         self.currententry.addItem(f"Date: {event_data['date']} at {event_data['time']}")
         self.currententry.addItem(f"Base Fee: ₱{event_data['base_fee']:.2f}")
         
-        # Get actual amount paid
+        # Also show how much was actually paid and when
         conn = get_db_connection()
         if conn:
             try:
@@ -2393,7 +2582,7 @@ class transfer(QDialog):
                 cursor.execute("""
                     SELECT total_amount_paid, registration_date
                     FROM event_registration
-                    WHERE registration_id = ?
+                    WHERE registration_id = %s
                 """, (self.selected_registration_id,))
                 
                 result = cursor.fetchone()
@@ -2403,7 +2592,7 @@ class transfer(QDialog):
                     self.currententry.addItem(f"Registration Date: {result[1]}")
                 else:
                     self.currententry.addItem("Registration details not found")
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading registration details: {err}")
                 self.currententry.addItem(f"Error: {err}")
             finally:
@@ -2413,7 +2602,7 @@ class transfer(QDialog):
             self.currententry.addItem("Database connection failed")
     
     def on_event_to_selected(self):
-        """Handle transfer to event selection."""
+        """When the 'to' event changes, show the new event info and any extra payment."""
         selected_text = self.transferto.currentText()
         if not selected_text:
             self.newevent.clear()
@@ -2429,10 +2618,10 @@ class transfer(QDialog):
         
         event_data = self.event_to_dict[selected_text]
         
-        # Display new event details (includes additional price calculation)
+        # Show the details of the event we're moving to
         self.display_new_event(event_data)
         
-        # Check if additional payment is needed and show warning
+        # See if we need to top up the payment and put a note in the label
         if self.selected_registration_id:
             conn = get_db_connection()
             if conn:
@@ -2441,7 +2630,7 @@ class transfer(QDialog):
                     cursor.execute("""
                         SELECT total_amount_paid
                         FROM event_registration
-                        WHERE registration_id = ?
+                        WHERE registration_id = %s
                     """, (self.selected_registration_id,))
                     
                     result = cursor.fetchone()
@@ -2456,7 +2645,7 @@ class transfer(QDialog):
                             self.petwarningsize.setText('No additional payment required.')
                     else:
                         self.petwarningsize.setText('Could not retrieve current payment amount.')
-                except sqlite3.Error as err:
+                except Error as err:
                     print(f"Error calculating payment: {err}")
                     self.petwarningsize.setText(f'Error: {err}')
                 finally:
@@ -2466,7 +2655,7 @@ class transfer(QDialog):
             self.petwarningsize.setText('No registration selected.')
     
     def display_new_event(self, event_data):
-        """Display new event details with additional price calculation."""
+        """Show new event info plus any extra payment we might need."""
         self.newevent.clear()
         
         if not event_data:
@@ -2478,7 +2667,7 @@ class transfer(QDialog):
         self.newevent.addItem(f"Base Fee: ₱{event_data['base_fee']:.2f}")
         self.newevent.addItem(f"Max Participants: {event_data['max_participants']}")
         
-        # Calculate and display additional price if needed
+        # Work out the extra amount if the new event is pricier
         if self.selected_registration_id:
             conn = get_db_connection()
             if conn:
@@ -2487,7 +2676,7 @@ class transfer(QDialog):
                     cursor.execute("""
                         SELECT total_amount_paid
                         FROM event_registration
-                        WHERE registration_id = ?
+                        WHERE registration_id = %s
                     """, (self.selected_registration_id,))
                     
                     result = cursor.fetchone()
@@ -2507,7 +2696,7 @@ class transfer(QDialog):
                     else:
                         self.newevent.addItem("")  # Empty line
                         self.newevent.addItem("Could not retrieve current payment")
-                except sqlite3.Error as err:
+                except Error as err:
                     print(f"Error calculating additional price: {err}")
                     self.newevent.addItem("")  # Empty line
                     self.newevent.addItem(f"Error: {err}")
@@ -2519,7 +2708,7 @@ class transfer(QDialog):
             self.newevent.addItem("No registration selected")
     
     def process_transfer(self):
-        """Process the event transfer."""
+        """Actually move the registration over to the new event."""
         self.petregiserr.setText('')
         
         if not self.eventfrom.currentText() or not self.transferto.currentText():
@@ -2546,7 +2735,7 @@ class transfer(QDialog):
                 cursor.execute("""
                     SELECT total_amount_paid
                     FROM event_registration
-                    WHERE registration_id = ?
+                    WHERE registration_id = %s
                 """, (self.selected_registration_id,))
                 
                 result = cursor.fetchone()
@@ -2581,15 +2770,15 @@ class transfer(QDialog):
                     
                     cursor.execute("""
                         UPDATE event_registration
-                        SET total_amount_paid = ?, payment_date = ?, payment_time = ?
-                        WHERE registration_id = ?
+                        SET total_amount_paid = %s, payment_date = %s, payment_time = %s
+                        WHERE registration_id = %s
                     """, (new_fee, payment_date, payment_time, self.selected_registration_id))
                 
                 # Update event_registration to new event
                 cursor.execute("""
                     UPDATE event_registration
-                    SET event_id = ?
-                    WHERE registration_id = ?
+                    SET event_id = %s
+                    WHERE registration_id = %s
                 """, (event_to['event_id'], self.selected_registration_id))
                 
                 # Update pet_event_entry to new event for all pets in this registration
@@ -2597,15 +2786,15 @@ class transfer(QDialog):
                     for pet_id in self.selected_pet_ids:
                         cursor.execute("""
                             UPDATE pet_event_entry
-                            SET event_id = ?
-                            WHERE registration_id = ? AND pet_id = ?
+                            SET event_id = %s
+                            WHERE registration_id = %s AND pet_id = %s
                         """, (event_to['event_id'], self.selected_registration_id, pet_id))
                 else:
                     # Fallback to single pet
                     cursor.execute("""
                         UPDATE pet_event_entry
-                        SET event_id = ?
-                        WHERE registration_id = ? AND pet_id = ?
+                        SET event_id = %s
+                        WHERE registration_id = %s AND pet_id = %s
                     """, (event_to['event_id'], self.selected_registration_id, self.selected_pet_id))
                 
                 # Log the transfer
@@ -2622,7 +2811,7 @@ class transfer(QDialog):
                     INSERT INTO participation_log
                     (log_id, registration_id, action_type, action_date, action_time,
                      original_event_id, new_event_id, reason, refund_amount, top_up_amount)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (new_log_id, self.selected_registration_id, 'Transferred', action_date, action_time,
                       event_from['event_id'], event_to['event_id'], 'Event transfer', 
                       0.00, new_fee - current_amount if new_fee > current_amount else 0.00))
@@ -2641,7 +2830,7 @@ class transfer(QDialog):
                 self.newevent.clear()
                 self.petwarningsize.setText('Transfer completed. Please select a new event to transfer to if needed.')
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Database UPDATE Error (Transfer): {err}")
                 if conn:
                     conn.rollback()
@@ -2691,7 +2880,7 @@ class withdraw(QDialog):
         self.load_enrolled_events(preselected_event_id)
     
     def load_owner_data(self):
-        """Load the current owner's information."""
+        """Grab the latest owner and show their name on top."""
         conn = get_db_connection()
         if conn:
             try:
@@ -2706,21 +2895,21 @@ class withdraw(QDialog):
                     cursor.execute("""
                         SELECT first_name, last_name 
                         FROM owners 
-                        WHERE owner_id = ?
+                        WHERE owner_id = %s
                     """, (self.current_owner_id,))
                     
                     owner_data = cursor.fetchone()
                     if owner_data:
                         owner_name = f"{owner_data[0]} {owner_data[1]}"
                         self.owerusername.setText(owner_name)
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading owner data: {err}")
             finally:
                 if conn:
                     conn.close()
     
     def load_enrolled_events(self, preselected_event_id=None):
-        """Load events the current owner is enrolled in."""
+        """List events this owner is currently signed up (and paid) for."""
         if self.current_owner_id is None:
             return
         
@@ -2733,7 +2922,7 @@ class withdraw(QDialog):
                            e.base_registration_fee, e.extra_pet_discount
                     FROM event_registration er
                     JOIN events e ON er.event_id = e.event_id
-                    WHERE er.owner_id = ? AND er.status = 'Paid'
+                    WHERE er.owner_id = %s AND er.status = 'Paid'
                     ORDER BY e.date, e.time
                 """, (self.current_owner_id,))
                 
@@ -2744,20 +2933,26 @@ class withdraw(QDialog):
                 for reg in registrations:
                     reg_id = reg[0]
                     event_id = reg[1]
-                    event_name = reg[2]
+                    event_name = reg[2] or 'Event'
+                    event_date = to_python_date(reg[3])
+                    event_time = str(reg[4]) if reg[4] not in (None, '') else ''
+                    event_date_text = format_date_string(event_date if event_date else reg[3])
+                    base_fee = float(reg[5]) if reg[5] is not None else 0.0
+                    extra_discount = float(reg[6]) if reg[6] is not None else 0.0
                     display_text = f"{event_name} (Reg #{reg_id})"
                     self.withdrawfrom.addItem(display_text)
                     self.event_from_dict[display_text] = {
                         'registration_id': reg_id,
                         'event_id': event_id,
-                        'name': reg[2],
-                        'date': reg[3],
-                        'time': reg[4],
-                        'base_fee': reg[5],
-                        'extra_pet_discount': reg[6]
+                        'name': event_name,
+                        'date': event_date,
+                        'date_text': event_date_text,
+                        'time': event_time,
+                        'base_fee': base_fee,
+                        'extra_pet_discount': extra_discount
                     }
                 
-                # If only one event, automatically select it
+                # If there’s only one choice, just auto-pick it for the user
                 if len(registrations) == 1:
                     # Always select the first (and only) item
                     index = 0
@@ -2765,7 +2960,7 @@ class withdraw(QDialog):
                     from PyQt6.QtCore import QTimer
                     QTimer.singleShot(0, lambda: self._select_withdraw_from(index))
                 elif preselected_event_id:
-                    # Select preselected event if provided
+                    # If Entries passed in an event, try to highlight that one
                     for text, data in self.event_from_dict.items():
                         if data['event_id'] == preselected_event_id:
                             index = self.withdrawfrom.findText(text)
@@ -2774,7 +2969,7 @@ class withdraw(QDialog):
                                 QTimer.singleShot(0, lambda idx=index: self._select_withdraw_from(idx))
                             break
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading enrolled events: {err}")
                 if self.petregiserr:
                     self.petregiserr.setText('Error loading enrolled events.')
@@ -2783,9 +2978,9 @@ class withdraw(QDialog):
                     conn.close()
     
     def _select_withdraw_from(self, index):
-        """Helper method to select event from combo box and trigger handler."""
+        """Helper to safely set the index and run the handler once."""
         if index >= 0 and index < self.withdrawfrom.count():
-            # Temporarily disconnect signal to avoid double-trigger
+            # Disconnect so we don't trigger twice while we change the index
             try:
                 self.withdrawfrom.currentIndexChanged.disconnect()
             except:
@@ -2793,14 +2988,14 @@ class withdraw(QDialog):
             
             self.withdrawfrom.setCurrentIndex(index)
             
-            # Reconnect signal
+            # Put the connection back
             self.withdrawfrom.currentIndexChanged.connect(self.on_event_from_selected)
             
-            # Manually trigger to load data
+            # And then manually refresh the UI
             self.on_event_from_selected()
     
     def on_event_from_selected(self):
-        """Handle event from selection."""
+        """When the event changes, reload the pets and the summary."""
         selected_text = self.withdrawfrom.currentText()
         if not selected_text or selected_text not in self.event_from_dict:
             self.currententry.clear()
@@ -2810,14 +3005,14 @@ class withdraw(QDialog):
         event_data = self.event_from_dict[selected_text]
         self.selected_registration_id = event_data['registration_id']
         
-        # Load pets and owners for this registration
+        # Keep track of which pets are tied to this registration
         self.load_pets_and_owners()
         
-        # Display current entry details with refund calculation
+        # Show the breakdown, including any possible refund
         self.display_current_entry_with_refund(event_data)
     
     def load_pets_and_owners(self):
-        """Load pets and owners for the selected registration."""
+        """Record which pets go with the current registration."""
         if not self.selected_registration_id:
             self.currententry.clear()
             return
@@ -2832,7 +3027,7 @@ class withdraw(QDialog):
                     JOIN owners o ON er.owner_id = o.owner_id
                     JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
                     JOIN pets p ON pee.pet_id = p.pet_id
-                    WHERE er.registration_id = ?
+                    WHERE er.registration_id = %s
                     ORDER BY p.name
                 """, (self.selected_registration_id,))
                 
@@ -2843,22 +3038,20 @@ class withdraw(QDialog):
                     for owner_first, owner_last, pet_name, pet_id in results:
                         self.selected_pet_ids.append(pet_id)
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading pets and owners: {err}")
             finally:
                 if conn:
                     conn.close()
     
     def calculate_refund(self, event_date, amount_paid):
-        """Calculate refund based on days before event."""
+        """Roughly figure out how much can be refunded based on how close the event is."""
         from datetime import datetime, date
         
         # Parse event date
-        try:
-            event_dt = datetime.strptime(event_date, '%Y-%m-%d').date()
-        except:
-            # Try alternative format if needed
-            event_dt = datetime.strptime(event_date, '%Y/%m/%d').date()
+        event_dt = to_python_date(event_date)
+        if not event_dt:
+            event_dt = date.today()
         
         # Get today's date
         today = date.today()
@@ -2891,15 +3084,19 @@ class withdraw(QDialog):
         }
     
     def display_current_entry_with_refund(self, event_data):
-        """Display current entry details with refund calculation."""
+        """Show the current event details plus a quick refund breakdown."""
         self.currententry.clear()
         
         if not self.selected_registration_id:
             return
         
-        self.currententry.addItem(f"Event: {event_data['name']}")
-        self.currententry.addItem(f"Event Date: {event_data['date']} at {event_data['time']}")
-        self.currententry.addItem(f"Base Fee: ₱{event_data['base_fee']:.2f}")
+        event_name = event_data.get('name', 'Event')
+        event_date_text = format_date_string(event_data.get('date'))
+        event_time = event_data.get('time') or ''
+        base_fee = float(event_data.get('base_fee', 0.0))
+        self.currententry.addItem(f"Event: {event_name}")
+        self.currententry.addItem(f"Event Date: {event_date_text} at {event_time}")
+        self.currententry.addItem(f"Base Fee: ₱{base_fee:.2f}")
         
         # Get actual amount paid and registration details
         conn = get_db_connection()
@@ -2909,14 +3106,14 @@ class withdraw(QDialog):
                 cursor.execute("""
                     SELECT total_amount_paid, registration_date, payment_date
                     FROM event_registration
-                    WHERE registration_id = ?
+                    WHERE registration_id = %s
                 """, (self.selected_registration_id,))
                 
                 result = cursor.fetchone()
                 if result:
-                    amount_paid = result[0]
-                    reg_date = result[1]
-                    payment_date = result[2]
+                    amount_paid = float(result[0]) if result[0] is not None else 0.0
+                    reg_date = format_date_string(result[1])
+                    payment_date = format_date_string(result[2])
                     
                     self.currententry.addItem("")  # Empty line
                     self.currententry.addItem(f"Amount Paid: ₱{amount_paid:.2f}")
@@ -2924,7 +3121,7 @@ class withdraw(QDialog):
                     self.currententry.addItem(f"Payment Date: {payment_date}")
                     
                     # Calculate refund
-                    refund_info = self.calculate_refund(event_data['date'], amount_paid)
+                    refund_info = self.calculate_refund(event_data.get('date'), amount_paid)
                     
                     self.currententry.addItem("")  # Empty line
                     self.currententry.addItem("--- Refund Calculation ---")
@@ -2940,7 +3137,7 @@ class withdraw(QDialog):
                         self.warningwithdrawal.setText("No refund available (less than 4 days before event).")
                 else:
                     self.currententry.addItem("Registration details not found")
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Error loading registration details: {err}")
                 self.currententry.addItem(f"Error: {err}")
             finally:
@@ -2950,7 +3147,7 @@ class withdraw(QDialog):
             self.currententry.addItem("Database connection failed")
     
     def process_withdrawal(self):
-        """Process the withdrawal/cancellation."""
+        """Handle the actual withdrawal and log it."""
         if not self.petregiserr:
             self.petregiserr = self.findChild(QtWidgets.QLabel, 'petregiserr')
         
@@ -2981,7 +3178,7 @@ class withdraw(QDialog):
                     SELECT er.total_amount_paid, e.date
                     FROM event_registration er
                     JOIN events e ON er.event_id = e.event_id
-                    WHERE er.registration_id = ?
+                    WHERE er.registration_id = %s
                 """, (self.selected_registration_id,))
                 
                 result = cursor.fetchone()
@@ -2991,7 +3188,7 @@ class withdraw(QDialog):
                     conn.close()
                     return
                 
-                amount_paid = result[0]
+                amount_paid = float(result[0]) if result[0] is not None else 0.0
                 event_date = result[1]
                 
                 # Calculate refund
@@ -3001,7 +3198,7 @@ class withdraw(QDialog):
                 from PyQt6.QtWidgets import QMessageBox
                 confirmation_msg = f"Are you sure you want to withdraw from this event?\n\n"
                 confirmation_msg += f"Event: {event_data['name']}\n"
-                confirmation_msg += f"Date: {event_data['date']}\n"
+                confirmation_msg += f"Date: {format_date_string(event_date)}\n"
                 confirmation_msg += f"Amount Paid: ₱{amount_paid:.2f}\n"
                 confirmation_msg += f"Refund: ₱{refund_info['refund_amount']:.2f}\n\n"
                 confirmation_msg += f"({refund_info['refund_text']})"
@@ -3021,7 +3218,7 @@ class withdraw(QDialog):
                     for pet_id in self.selected_pet_ids:
                         cursor.execute("""
                             DELETE FROM pet_event_entry
-                            WHERE registration_id = ? AND pet_id = ?
+                            WHERE registration_id = %s AND pet_id = %s
                         """, (self.selected_registration_id, pet_id))
                 
                 # Update registration status to Cancelled (keep record for audit, but mark as cancelled)
@@ -3031,8 +3228,8 @@ class withdraw(QDialog):
                 
                 cursor.execute("""
                     UPDATE event_registration
-                    SET status = ?, cancellation_date = ?
-                    WHERE registration_id = ?
+                    SET status = %s, cancellation_date = %s
+                    WHERE registration_id = %s
                 """, ('Cancelled', cancellation_date, self.selected_registration_id))
                 
                 # Log the cancellation
@@ -3047,7 +3244,7 @@ class withdraw(QDialog):
                     INSERT INTO participation_log
                     (log_id, registration_id, action_type, action_date, action_time,
                      original_event_id, new_event_id, reason, refund_amount, top_up_amount)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (new_log_id, self.selected_registration_id, 'Cancelled', action_date, action_time,
                       event_data['event_id'], None, 'Owner withdrew from event', 
                       refund_info['refund_amount'], 0.00))
@@ -3065,7 +3262,7 @@ class withdraw(QDialog):
                 if self.warningwithdrawal:
                     self.warningwithdrawal.setText('Withdrawal completed.')
                 
-            except sqlite3.Error as err:
+            except Error as err:
                 print(f"Database UPDATE Error (Withdrawal): {err}")
                 if conn:
                     conn.rollback()
@@ -3087,6 +3284,19 @@ class withdraw(QDialog):
     def gotoentries(self):
         entrs = entries()
         widget.addWidget(entrs)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
+# --------------------------------------------------------------------------------------------------------------------
+
+class status(QDialog):
+    def __init__(self):
+        super(status, self).__init__()
+        loadUi('./gui/status.ui', self)
+        self.exitbutt.clicked.connect(self.gotommenu)
+
+    def gotommenu(self):
+        mmenu = mainmenu()
+        widget.addWidget(mmenu)
         widget.setCurrentIndex(widget.currentIndex() + 1)
 
 # --------------------------------------------------------------------------------------------------------------------
