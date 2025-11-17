@@ -1,17 +1,24 @@
 import sys
+import os
 from datetime import datetime, date
+from dotenv import load_dotenv
 import mysql.connector
 from mysql.connector import Error
 from PyQt6.uic import loadUi
 from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QDialog, QApplication, QWidget, QStackedWidget
 
+load_dotenv()
+
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'group2s14',
-    'database': 'pet_show'
+    'host': os.getenv('DB_HOST', 'localhost'),
+    'user': os.getenv('DB_USER', 'root'),
+    'password': os.getenv('DB_PASSWORD'),       # MAKE SURE TO SET THIS UP!
+    'database': os.getenv('DB_DATABASE', 'pet_show')
 }
+
+if DB_CONFIG['password'] is None:
+    print("Error: DB_PASSWORD environment variable is not set.")
 
 def get_db_connection():
     """Open a MySQL connection using the config above."""
