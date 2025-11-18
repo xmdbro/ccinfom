@@ -386,7 +386,11 @@ class OwnerRegisScreen(QDialog):
         if (len(userfirstname) == 0 or len(userlastname) == 0):
             self.owerrormes.setText('Please fill in required fields.')
             return
-            
+        
+        if not useremail and not usernumber:
+            self.owerrormes.setText('Provide atleast an email address or mobile number.')
+            return
+        
         conn = get_db_connection()
         
         if conn:
@@ -400,7 +404,7 @@ class OwnerRegisScreen(QDialog):
                 
                 # Insert into the database
                 sql = "INSERT INTO owners (owner_id, first_name, last_name, email, contact_number) VALUES (%s, %s, %s, %s, %s)"
-                data = (new_owner_id, userfirstname, userlastname, useremail, usernumber)
+                data = (new_owner_id, userfirstname, userlastname, useremail or None, usernumber or None)
                 
                 cursor.execute(sql, data)
                 conn.commit()
@@ -1862,25 +1866,25 @@ class mainmenu(QDialog):
             
             # 5. Awards summary
             cursor.execute("""
-                SELECT e.name as event_name, a.type as award_type, COUNT(*) as award_count
+                SELECT e.name as event_name, a.award_name, COUNT(*) as award_count
                 FROM awards a
                 JOIN events e ON a.event_id = e.event_id
                 WHERE a.date = %s
-                GROUP BY e.name, a.type
-                ORDER BY e.name, a.type
+                GROUP BY e.name, a.award_name
+                ORDER BY e.name, a.award_name
             """, (date_str,))
             
             awards = cursor.fetchall()
             if awards:
                 all_rows.append(("--- AWARDS ---", ""))
                 current_event = None
-                for event_name, award_type, award_count in awards:
+                for event_name, award_name, award_count in awards:
                     if event_name != current_event:
                         if current_event is not None:
                             all_rows.append(("", ""))
                         all_rows.append((f"Event: {event_name}", ""))
                         current_event = event_name
-                    all_rows.append((f"  {award_type}: {award_count}", ""))
+                    all_rows.append((f"  {award_name}: {award_count}", ""))
             
             # Populate table
             if not all_rows:
