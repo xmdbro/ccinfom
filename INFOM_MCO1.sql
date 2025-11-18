@@ -248,7 +248,7 @@ INSERT INTO pet_event_entry (entry_id, registration_id, pet_id, event_id, attend
 
 CREATE TABLE awards (
     award_id INT NOT NULL PRIMARY KEY,
-    pet_id INT NOT NULL,
+    pet_id INT,
     is_special TINYINT(1) NOT NULL,
     award_name VARCHAR(100) NOT NULL,
     description TEXT,
