@@ -36,7 +36,8 @@ INSERT INTO owners (owner_id, first_name, last_name, email, contact_number) VALU
 (12, 'Jocelyn', 'Lo', 'jocelyn.lo@example.com', '09281234567'),
 (13, 'Noah', 'Bautista', 'noah.bautista@example.com', '09291234567'),
 (14, 'Maya', 'Ortiz', 'maya.ortiz@example.com', '09301234567'),
-(15, 'Paul', 'Serrano', 'paul.serrano@example.com', '09311234567');
+(15, 'Paul', 'Serrano', 'paul.serrano@example.com', '09311234567'),
+(16, 'Raphael', 'Gonda', 'raphael.gonda@example.com', '09967676767');
 
 CREATE TABLE breeds (
     breed_id INT NOT NULL PRIMARY KEY,
@@ -327,6 +328,35 @@ INSERT INTO admin_log (admin_id, username, password, first_name, last_name) VALU
 (2, 'juliazarate', 'julia', 'Julia', 'Zarate'),
 (3, 'lancechu', 'lance', 'Lance', 'Chu'),
 (4, 'michaelfajardo', 'michael', 'Michael', 'Fajardo');
+
+CREATE TABLE owner_log (
+    owner_id INT NOT NULL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email TEXT,
+    contact_number TEXT,
+    CONSTRAINT fk_ownerlog_owner FOREIGN KEY (owner_id) REFERENCES owners(owner_id)
+);
+
+INSERT INTO owner_log (owner_id, username, password, first_name, last_name, email, contact_number) VALUES
+(1, 'miguelsantos', 'miguel', 'Miguel', 'Santos', 'miguel.santos@example.com', '09171234567'),
+(2, 'annareyes', 'anna', 'Anna', 'Reyes', 'anna.reyes@example.com', '09181234567'),
+(3, 'diegovelasco', 'diego', 'Diego', 'Velasco', 'diego.velasco@example.com', '09191234567'),
+(4, 'hannahlopz', 'hannah', 'Hannah', 'Lopez', 'h.lopez@example.com', '09201234567'),
+(5, 'rafaeldelacruz', 'rafael', 'Rafael', 'DelaCruz', 'rafael.delacruz@example.com', '09211234567'),
+(6, 'sofiagarcia', 'sofia', 'Sofia', 'Garcia', 'sofia.garcia@example.com', '09221234567'),
+(7, 'ethantan', 'ethan', 'Ethan', 'Tan', 'ethan.tan@example.com', '09231234567'),
+(8, 'laragomez', 'lara', 'Lara', 'Gomez', 'lara.gomez@example.com', '09241234567'),
+(9, 'carlosmendoza', 'carlos', 'Carlos', 'Mendoza', 'c.mendoza@example.com', '09251234567'),
+(10, 'isabelparedes', 'isabel', 'Isabel', 'Paredes', 'isabel.paredes@example.com', '09261234567'),
+(11, 'markcruz', 'mark', 'Mark', 'Cruz', 'mark.cruz@example.com', '09271234567'),
+(12, 'jocelynlo', 'jocelyn', 'Jocelyn', 'Lo', 'jocelyn.lo@example.com', '09281234567'),
+(13, 'noahbautista', 'noah', 'Noah', 'Bautista', 'noah.bautista@example.com', '09291234567'),
+(14, 'mayaortiz', 'maya', 'Maya', 'Ortiz', 'maya.ortiz@example.com', '09301234567'),
+(15, 'paulserrano', 'paul', 'Paul', 'Serrano', 'paul.serrano@example.com', '09311234567'),
+(16, 'raphaelgonda', 'raphael', 'Raphael', 'Gonda', 'raphael.gonda@example.com', '09967676767');
 
 USE pet_show;
 

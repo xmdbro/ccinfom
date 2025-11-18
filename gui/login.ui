@@ -29,7 +29,7 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>images/background registration 1.png</pixmap>
+    <pixmap>images/login.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -51,8 +51,8 @@
   <widget class="QPushButton" name="exitbutt">
    <property name="geometry">
     <rect>
-     <x>530</x>
-     <y>650</y>
+     <x>540</x>
+     <y>640</y>
      <width>181</width>
      <height>41</height>
     </rect>
@@ -95,11 +95,11 @@ QWidget#exitbutt:hover {
     <string>Exit</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="loginbutt">
+  <widget class="QPushButton" name="adminlogbutt">
    <property name="geometry">
     <rect>
-     <x>510</x>
-     <y>590</y>
+     <x>390</x>
+     <y>560</y>
      <width>221</width>
      <height>51</height>
     </rect>
@@ -125,12 +125,12 @@ QWidget#exitbutt:hover {
     <bool>false</bool>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#loginbutt{
+    <string notr="true">QWidget#adminlogbutt{
 background-color: rgb(54, 113, 145);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#loginbutt:hover {
+QWidget#adminlogbutt:hover {
     
     background-color: rgb(251, 176, 59); 
     border: 2px solid #388E3C; 
@@ -139,7 +139,54 @@ QWidget#loginbutt:hover {
 }</string>
    </property>
    <property name="text">
-    <string>Log in</string>
+    <string>Admin</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="ownerlogbutt">
+   <property name="geometry">
+    <rect>
+     <x>660</x>
+     <y>560</y>
+     <width>221</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial Black</family>
+     <pointsize>12</pointsize>
+     <italic>false</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+   <property name="mouseTracking">
+    <bool>true</bool>
+   </property>
+   <property name="tabletTracking">
+    <bool>true</bool>
+   </property>
+   <property name="acceptDrops">
+    <bool>false</bool>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QWidget#ownerlogbutt{
+background-color: rgb(54, 113, 145);
+font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
+border-radius: 10px;}
+
+QWidget#ownerlogbutt:hover {
+    
+    background-color: rgb(251, 176, 59); 
+    border: 2px solid #388E3C; 
+    padding: 10px 20px; 
+    font-size: 15px; 
+}</string>
+   </property>
+   <property name="text">
+    <string>Owner</string>
    </property>
   </widget>
  </widget>
