@@ -35,7 +35,7 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>images/mainmenu6.png</pixmap>
+    <pixmap>images/adminmenu.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -54,25 +54,25 @@
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="eventsbutt">
+  <widget class="QPushButton" name="viewattenbuttt">
    <property name="geometry">
     <rect>
-     <x>700</x>
-     <y>10</y>
-     <width>161</width>
-     <height>51</height>
+     <x>900</x>
+     <y>480</y>
+     <width>291</width>
+     <height>61</height>
     </rect>
    </property>
    <property name="cursor">
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#eventsbutt{
+    <string notr="true">QWidget#viewattenbuttt{
 background-color: rgb(251, 176, 59);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#eventsbutt:hover {
+QWidget#viewattenbuttt:hover {
     
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
@@ -81,38 +81,28 @@ QWidget#eventsbutt:hover {
 }</string>
    </property>
    <property name="text">
-    <string>View Events</string>
+    <string>View Event Attendance Report</string>
    </property>
   </widget>
-  <widget class="QCalendarWidget" name="calendarWidget">
+  <widget class="QPushButton" name="assscoresawpetbutt">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>290</y>
-     <width>321</width>
-     <height>431</height>
-    </rect>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="eventregbutt">
-   <property name="geometry">
-    <rect>
-     <x>520</x>
-     <y>10</y>
-     <width>161</width>
-     <height>51</height>
+     <x>900</x>
+     <y>270</y>
+     <width>291</width>
+     <height>61</height>
     </rect>
    </property>
    <property name="cursor">
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#eventregbutt{
+    <string notr="true">QWidget#assscoresawpetbutt{
 background-color: rgb(251, 176, 59);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#eventregbutt:hover {
+QWidget#assscoresawpetbutt:hover {
     
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
@@ -121,28 +111,28 @@ QWidget#eventregbutt:hover {
 }</string>
    </property>
    <property name="text">
-    <string>Enroll In Event</string>
+    <string>Assign Scores / Award Pets</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="petregbutt">
+  <widget class="QPushButton" name="upattendancebutt">
    <property name="geometry">
     <rect>
-     <x>520</x>
-     <y>70</y>
-     <width>161</width>
-     <height>41</height>
+     <x>900</x>
+     <y>340</y>
+     <width>291</width>
+     <height>61</height>
     </rect>
    </property>
    <property name="cursor">
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#petregbutt{
+    <string notr="true">QWidget#upattendancebutt{
 background-color: rgb(251, 176, 59);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#petregbutt:hover {
+QWidget#upattendancebutt:hover {
     
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
@@ -151,28 +141,28 @@ QWidget#petregbutt:hover {
 }</string>
    </property>
    <property name="text">
-    <string>Register Pet</string>
+    <string>Update Attendance Status</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="editinbutt">
+  <widget class="QPushButton" name="viewpartbutt">
    <property name="geometry">
     <rect>
-     <x>880</x>
-     <y>10</y>
-     <width>151</width>
-     <height>51</height>
+     <x>900</x>
+     <y>550</y>
+     <width>291</width>
+     <height>61</height>
     </rect>
    </property>
    <property name="cursor">
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#editinbutt{
+    <string notr="true">QWidget#viewpartbutt{
 background-color: rgb(251, 176, 59);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#editinbutt:hover {
+QWidget#viewpartbutt:hover {
     
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
@@ -181,14 +171,14 @@ QWidget#editinbutt:hover {
 }</string>
    </property>
    <property name="text">
-    <string>Edit Info</string>
+    <string>View Participation Log</string>
    </property>
   </widget>
   <widget class="QPushButton" name="mmexitbutt">
    <property name="geometry">
     <rect>
-     <x>1050</x>
-     <y>70</y>
+     <x>970</x>
+     <y>620</y>
      <width>151</width>
      <height>41</height>
     </rect>
@@ -214,25 +204,25 @@ QWidget#mmexitbutt:hover {
     <string>Exit</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="entrybutt">
+  <widget class="QPushButton" name="vieweventawbutt">
    <property name="geometry">
     <rect>
-     <x>700</x>
-     <y>70</y>
-     <width>161</width>
-     <height>41</height>
+     <x>900</x>
+     <y>410</y>
+     <width>291</width>
+     <height>61</height>
     </rect>
    </property>
    <property name="cursor">
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#entrybutt{
+    <string notr="true">QWidget#vieweventawbutt{
 background-color: rgb(251, 176, 59);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#entrybutt:hover {
+QWidget#vieweventawbutt:hover {
     
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
@@ -241,15 +231,15 @@ QWidget#entrybutt:hover {
 }</string>
    </property>
    <property name="text">
-    <string>Entries</string>
+    <string>View Event Awards Report</string>
    </property>
   </widget>
-  <widget class="QTableWidget" name="eventontheday">
+  <widget class="QTableWidget" name="eventstatus">
    <property name="geometry">
     <rect>
-     <x>400</x>
-     <y>270</y>
-     <width>801</width>
+     <x>90</x>
+     <y>240</y>
+     <width>741</width>
      <height>451</height>
     </rect>
    </property>
@@ -263,36 +253,6 @@ QWidget#entrybutt:hover {
    <property name="styleSheet">
     <string notr="true">color: rgb(20, 33, 68);
 background-color: rgb(255, 255, 255);</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="statusbutt">
-   <property name="geometry">
-    <rect>
-     <x>880</x>
-     <y>70</y>
-     <width>151</width>
-     <height>41</height>
-    </rect>
-   </property>
-   <property name="cursor">
-    <cursorShape>PointingHandCursor</cursorShape>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">QWidget#statusbutt{
-background-color: rgb(251, 176, 59);
-font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
-border-radius: 10px;}
-
-QWidget#statusbutt:hover {
-    
-    background-color:rgb(238, 223, 146); 
-    border: 2px solid #388E3C; 
-    padding: 10px 20px; 
-    font-size: 15px; 
-}</string>
-   </property>
-   <property name="text">
-    <string>Your Status</string>
    </property>
   </widget>
  </widget>
