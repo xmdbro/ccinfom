@@ -3,7 +3,7 @@ from datetime import datetime, date
 import mysql.connector
 from mysql.connector import Error
 from PyQt6.uic import loadUi
-from PyQt6 import QtWidgets
+from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtWidgets import QDialog, QApplication, QWidget, QStackedWidget
 
 DB_CONFIG = {
@@ -208,6 +208,17 @@ def setup_database():
                 FOREIGN KEY (new_event_id) REFERENCES events(event_id)
             )
             """)
+            
+            # admin_log
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS admin_log (
+                admin_id INT NOT NULL PRIMARY KEY,
+                username VARCHAR(50) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                first_name VARCHAR(50) NOT NULL,
+                last_name VARCHAR(50) NOT NULL
+            )
+            """)
            
             # size_category
             cursor.executemany("INSERT IGNORE INTO size_category (size_id, size_name) VALUES (%s, %s)", [
@@ -333,11 +344,15 @@ class RegisterScreen(QDialog):
         super(RegisterScreen, self).__init__()
         loadUi('./gui/registerscreen.ui', self) 
         self.regbutt.clicked.connect(self.gotoownerregistration)
+        self.exitbutt.clicked.connect(self.quit_application)
 
     def gotoownerregistration(self):
         ownerreg = OwnerRegisScreen()
         widget.addWidget(ownerreg)
         widget.setCurrentIndex(widget.currentIndex() + 1)
+
+    def quit_application(self):
+        app.quit()
 
 # --------------------------------------------------------------------------------------------------------------------
 
@@ -420,11 +435,147 @@ class adminlog(QDialog):
     def __init__(self):
         super(adminlog, self).__init__()
         loadUi('./gui/adminlogscreen.ui', self)
-        self.loginbutt.clicked.connect(self.gotoadminmenu)
+        self.loginbutt.clicked.connect(self.login)
+        self.signupbutt.clicked.connect(self.gotoadminsignup)
+        self.exitbutt.clicked.connect(self.gotoregscreen)
+        self.logerrormes = self.findChild(QtWidgets.QLabel, 'logerrormes')
+        
+        # Make password field hide characters
+        self.password.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
+    
+    
+    def gotoregscreen(self):
+        reg = RegisterScreen()
+        widget.addWidget(reg)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
+    def login(self):
+        """Handle admin login."""
+        username = self.username.text().strip()
+        password = self.password.text().strip()
+        
+        self.logerrormes.setText('')
+        
+        if not username or not password:
+            self.logerrormes.setText('Please enter both username and password.')
+            return
+        
+        conn = get_db_connection()
+        if not conn:
+            self.logerrormes.setText('Database connection failed.')
+            return
+        
+        try:
+            cursor = conn.cursor()
+            
+            cursor.execute("""
+                SELECT admin_id, username, first_name, last_name
+                FROM admin_log
+                WHERE username = %s AND password = %s
+            """, (username, password))
+            
+            result = cursor.fetchone()
+            
+            if result:
+                # Login successful
+                self.gotoadminmenu()
+            else:
+                self.logerrormes.setText('Invalid username or password.')
+        except Error as err:
+            print(f"Error during login: {err}")
+            self.logerrormes.setText('Login failed. Please try again.')
+        finally:
+            if conn:
+                conn.close()
 
     def gotoadminmenu(self):
         admmn = adminmenu()
         widget.addWidget(admmn)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
+    def gotoadminsignup(self):
+        adsign = adminmsignup()
+        widget.addWidget(adsign)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+        
+# --------------------------------------------------------------------------------------------------------------------
+class adminmsignup(QDialog):
+    def __init__(self):
+        super(adminmsignup, self).__init__()
+        loadUi('./gui/adminsignup.ui', self)
+        self.signupbutt.clicked.connect(self.signup)
+        self.logerrormes = self.findChild(QtWidgets.QLabel, 'logerrormes')
+        self.exitbutt.clicked.connect(self.gotoadminscreen)
+        
+        # Make password field hide characters
+        self.password.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
+    
+    def gotoadminscreen(self):
+        admn = adminlog()
+        widget.addWidget(admn)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
+    def signup(self):
+        """Handle admin signup."""
+        username = self.username.text().strip()
+        password = self.password.text().strip()
+        first_name = self.firstname.text().strip()
+        last_name = self.lastname.text().strip()
+        
+        self.logerrormes.setText('')
+        
+        if not username or not password or not first_name or not last_name:
+            self.logerrormes.setText('Please fill in all fields.')
+            return
+        
+        conn = get_db_connection()
+        if not conn:
+            self.logerrormes.setText('Database connection failed.')
+            return
+        
+        try:
+            cursor = conn.cursor()
+            
+            # Check if username already exists
+            cursor.execute("SELECT admin_id FROM admin_log WHERE username = %s", (username,))
+            if cursor.fetchone():
+                self.logerrormes.setText('Username already exists. Please choose another.')
+                conn.close()
+                return
+            
+            # Get next admin_id
+            cursor.execute("SELECT MAX(admin_id) FROM admin_log")
+            max_admin_id = cursor.fetchone()[0]
+            new_admin_id = (max_admin_id if max_admin_id is not None else 0) + 1
+            
+            # Insert new admin with plain text password
+            cursor.execute("""
+                INSERT INTO admin_log (admin_id, username, password, first_name, last_name)
+                VALUES (%s, %s, %s, %s, %s)
+            """, (new_admin_id, username, password, first_name, last_name))
+            
+            conn.commit()
+            
+            self.logerrormes.setText('Account created successfully! You can now log in.')
+            
+            # Clear fields
+            self.username.clear()
+            self.password.clear()
+            self.firstname.clear()
+            self.lastname.clear()
+            
+        except Error as err:
+            print(f"Error during signup: {err}")
+            if conn:
+                conn.rollback()
+            self.logerrormes.setText('Signup failed. Please try again.')
+        finally:
+            if conn:
+                conn.close()
+
+    def gotoadminlog(self):
+        adlog = adminlog()
+        widget.addWidget(adlog)
         widget.setCurrentIndex(widget.currentIndex() + 1)
         
 # --------------------------------------------------------------------------------------------------------------------
@@ -438,10 +589,19 @@ class adminmenu(QDialog):
         self.vieweventawbutt.clicked.connect(self.gotoviewevntaw)
         self.viewattenbuttt.clicked.connect(self.gotoviewatten)
         self.viewpartbutt.clicked.connect(self.gotopartlog)
+        self.assscoresawpetbutt.clicked.connect(self.gotoawpetscore)
+        
+        # Load event status table
+        self.load_eventstatus()
 
     def gotoregscreen(self):
         reg = RegisterScreen()
         widget.addWidget(reg)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+    
+    def gotoawpetscore(self):
+        awpsc = awardpetscore()
+        widget.addWidget(awpsc)
         widget.setCurrentIndex(widget.currentIndex() + 1)
     
     def gotoupatten(self):
@@ -462,7 +622,162 @@ class adminmenu(QDialog):
     def gotopartlog(self):
         prtlg = participantlog()
         widget.addWidget(prtlg)
-        widget.setCurrentIndex(widget.currentIndex() + 1)        
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+    
+    def load_eventstatus(self):
+        """Load event status with awarded pets info into the table."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            
+            # Get all events
+            cursor.execute("""
+                SELECT e.event_id, e.name, e.date, e.time, e.location, e.status
+                FROM events e
+                ORDER BY e.date, e.time
+            """)
+            
+            events = cursor.fetchall()
+            all_rows = []
+            
+            for event in events:
+                event_id = event[0]
+                event_name = event[1] or 'Event'
+                event_date = format_date_string(event[2])
+                event_time = str(event[3]) if event[3] not in (None, '') else ''
+                location = event[4] or 'N/A'
+                status = 'Open' if event[5] == 1 else 'Closed'
+                
+                # Get awards for this event
+                cursor.execute("""
+                    SELECT DISTINCT a.type, a.award_id
+                    FROM awards a
+                    WHERE a.event_id = %s
+                    ORDER BY a.type
+                """, (event_id,))
+                
+                awards = cursor.fetchall()
+                
+                if awards:
+                    # For each award type, get the awarded pets
+                    for award_type, award_id in awards:
+                        award_type_str = award_type or 'Award'
+                        
+                        # Check if it's a placement award (Champion, Runner Up, etc.)
+                        is_placement = any(keyword in award_type_str.lower() for keyword in ['champion', 'runner up', '1st', '2nd', '3rd', 'first', 'second', 'third'])
+                        
+                        if is_placement:
+                            # For placement awards, get top 2 or 3
+                            if 'champion' in award_type_str.lower() or '1st' in award_type_str.lower() or 'first' in award_type_str.lower():
+                                limit = 1
+                            elif 'runner up' in award_type_str.lower() or '2nd' in award_type_str.lower() or 'second' in award_type_str.lower():
+                                limit = 2
+                            elif '3rd' in award_type_str.lower() or 'third' in award_type_str.lower():
+                                limit = 3
+                            else:
+                                limit = 2  # Default for placement
+                            
+                            # Build query with LIMIT (safe since limit is always 1, 2, or 3)
+                            query = f"""
+                                SELECT p.name, pee.pet_result
+                                FROM pet_event_entry pee
+                                JOIN pets p ON pee.pet_id = p.pet_id
+                                JOIN awards a ON a.pet_id = p.pet_id AND a.event_id = pee.event_id
+                                WHERE pee.event_id = %s AND a.type = %s
+                                ORDER BY pee.pet_result DESC
+                                LIMIT {limit}
+                            """
+                            cursor.execute(query, (event_id, award_type_str))
+                        else:
+                            # For special awards, get top 1 by pet_result
+                            cursor.execute("""
+                                SELECT p.name, pee.pet_result
+                                FROM pet_event_entry pee
+                                JOIN pets p ON pee.pet_id = p.pet_id
+                                JOIN awards a ON a.pet_id = p.pet_id AND a.event_id = pee.event_id
+                                WHERE pee.event_id = %s AND a.type = %s
+                                ORDER BY pee.pet_result DESC
+                                LIMIT 1
+                            """, (event_id, award_type_str))
+                        
+                        awarded_pets = cursor.fetchall()
+                        
+                        if awarded_pets:
+                            pet_names = ', '.join([pet[0] for pet in awarded_pets])
+                        else:
+                            # Fallback: get pets from awards table directly
+                            cursor.execute("""
+                                SELECT p.name
+                                FROM awards a
+                                JOIN pets p ON a.pet_id = p.pet_id
+                                WHERE a.event_id = %s AND a.type = %s
+                            """, (event_id, award_type_str))
+                            award_pets = cursor.fetchall()
+                            pet_names = ', '.join([pet[0] for pet in award_pets]) if award_pets else 'N/A'
+                        
+                        # Add row for this event and award
+                        all_rows.append((
+                            str(event_id),
+                            event_name,
+                            event_date,
+                            event_time,
+                            location,
+                            status,
+                            pet_names,
+                            award_type_str
+                        ))
+                else:
+                    # Event with no awards yet
+                    all_rows.append((
+                        str(event_id),
+                        event_name,
+                        event_date,
+                        event_time,
+                        location,
+                        status,
+                        'No awards yet',
+                        'N/A'
+                    ))
+            
+            # Set up table
+            self.eventstatus.setRowCount(len(all_rows))
+            self.eventstatus.setColumnCount(8)
+            self.eventstatus.setHorizontalHeaderLabels([
+                'Event Id', 'Event Name', 'Event Date', 'Time', 'Location', 
+                'Status', 'Awarded Pets', 'Award Name'
+            ])
+            
+            # Populate table
+            for row, data in enumerate(all_rows):
+                for col, value in enumerate(data):
+                    item = QtWidgets.QTableWidgetItem(str(value) if value is not None else '')
+                    # Let text wrap for the name/location columns
+                    if col in [1, 4, 6, 7]:  # Event Name, Location, Awarded Pets, Award Name
+                        item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
+                    self.eventstatus.setItem(row, col, item)
+            
+            # Turn on word wrap so nothing gets cut off
+            self.eventstatus.setWordWrap(True)
+            
+            # Use stretch mode to fill the widget initially, still allows manual resizing
+            header = self.eventstatus.horizontalHeader()
+            if header:
+                header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+            vheader = self.eventstatus.verticalHeader()
+            if vheader:
+                vheader.setVisible(False)
+                # Taller rows for wrapped text
+                vheader.setDefaultSectionSize(40)
+            
+        except Error as err:
+            print(f"Error loading event status: {err}")
+        finally:
+            if conn:
+                conn.close()
+        
 # --------------------------------------------------------------------------------------------------------------------
 
 class updateattendance(QDialog):
@@ -470,6 +785,256 @@ class updateattendance(QDialog):
         super(updateattendance, self).__init__()
         loadUi('./gui/upattendancestatus.ui', self)
         self.exitbutt.clicked.connect(self.gotoadminmenu)
+        self.savebutt.clicked.connect(self.save_attendance)
+        self.errormessage = self.findChild(QtWidgets.QLabel, 'errormessage')
+        
+        # Load events and attendance statuses
+        self.load_events()
+        self.load_attendance_statuses()
+        
+        # Connect event selection to load pets and data
+        self.events.currentIndexChanged.connect(self.on_event_selected)
+        self.pets.currentIndexChanged.connect(self.on_pet_selected)
+        
+        # Store selected entry_id for updates
+        self.selected_entry_id = None
+    
+    def load_events(self):
+        """Grab all events and stick them in the dropdown."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT event_id, name 
+                FROM events 
+                ORDER BY date, time
+            """)
+            
+            events = cursor.fetchall()
+            self.events.clear()
+            self.events.addItem("Select Event")
+            
+            for event_id, event_name in events:
+                display_text = f"{event_name} (ID: {event_id})"
+                self.events.addItem(display_text)
+        except Error as err:
+            print(f"Error loading events: {err}")
+        finally:
+            if conn:
+                conn.close()
+    
+    def load_attendance_statuses(self):
+        """Load all possible attendance statuses."""
+        self.attendancestatus.clear()
+        self.attendancestatus.addItem("Select Status")
+        self.attendancestatus.addItem("Present")
+        self.attendancestatus.addItem("No Show")
+        self.attendancestatus.addItem("Registered")
+    
+    def on_event_selected(self):
+        """When an event is selected, load the pets and display data."""
+        event_text = self.events.currentText()
+        if event_text == "Select Event":
+            self.eventstatus.setRowCount(0)
+            self.pets.clear()
+            return
+        
+        # Extract event_id
+        try:
+            event_id = int(event_text.split('(ID: ')[1].split(')')[0])
+        except:
+            self.eventstatus.setRowCount(0)
+            return
+        
+        # Load pets for this event
+        self.load_pets_for_event(event_id)
+        
+        # Load and display attendance data
+        self.load_attendance_data(event_id)
+    
+    def load_pets_for_event(self, event_id):
+        """Load all pets registered for the selected event."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT DISTINCT p.pet_id, p.name
+                FROM pet_event_entry pee
+                JOIN pets p ON pee.pet_id = p.pet_id
+                WHERE pee.event_id = %s
+                ORDER BY p.name
+            """, (event_id,))
+            
+            pets = cursor.fetchall()
+            self.pets.clear()
+            self.pets.addItem("Select Pet")
+            
+            for pet_id, pet_name in pets:
+                display_text = f"{pet_name} (ID: {pet_id})"
+                self.pets.addItem(display_text)
+        except Error as err:
+            print(f"Error loading pets: {err}")
+        finally:
+            if conn:
+                conn.close()
+    
+    def on_pet_selected(self):
+        """When a pet is selected, find its entry_id for updating."""
+        pet_text = self.pets.currentText()
+        event_text = self.events.currentText()
+        
+        if pet_text == "Select Pet" or event_text == "Select Event":
+            self.selected_entry_id = None
+            return
+        
+        try:
+            pet_id = int(pet_text.split('(ID: ')[1].split(')')[0])
+            event_id = int(event_text.split('(ID: ')[1].split(')')[0])
+            
+            conn = get_db_connection()
+            if conn:
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT entry_id 
+                        FROM pet_event_entry 
+                        WHERE pet_id = %s AND event_id = %s
+                        LIMIT 1
+                    """, (pet_id, event_id))
+                    
+                    result = cursor.fetchone()
+                    if result:
+                        self.selected_entry_id = result[0]
+                finally:
+                    conn.close()
+        except:
+            self.selected_entry_id = None
+    
+    def load_attendance_data(self, event_id):
+        """Load attendance data for the selected event and display in table."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT pee.entry_id, pee.pet_id, p.name AS pet_name, pee.attendance_status AS current_status
+                FROM pet_event_entry pee
+                JOIN pets p ON pee.pet_id = p.pet_id
+                WHERE pee.event_id = %s
+                ORDER BY p.name
+            """, (event_id,))
+            
+            results = cursor.fetchall()
+            
+            # Set up table
+            self.eventstatus.setRowCount(len(results))
+            self.eventstatus.setColumnCount(4)
+            self.eventstatus.setHorizontalHeaderLabels([
+                'Entry ID', 'Pet ID', 'Pet Name', 'Current Status'
+            ])
+            
+            # Populate table
+            for row, data in enumerate(results):
+                entry_id = data[0]
+                pet_id = data[1]
+                pet_name = data[2] or 'Unknown'
+                current_status = data[3] or 'Unknown'
+                
+                values = [str(entry_id), str(pet_id), pet_name, current_status]
+                for col, value in enumerate(values):
+                    item = QtWidgets.QTableWidgetItem(str(value))
+                    if col in [2, 3]:  # Pet Name, Current Status
+                        item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
+                    self.eventstatus.setItem(row, col, item)
+            
+            # Use same formatting as participantlog - stretch mode with word wrap
+            self.eventstatus.setWordWrap(True)
+            header = self.eventstatus.horizontalHeader()
+            if header:
+                header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+            vheader = self.eventstatus.verticalHeader()
+            if vheader:
+                vheader.setVisible(False)
+                vheader.setDefaultSectionSize(40)
+            
+        except Error as err:
+            print(f"Error loading attendance data: {err}")
+            if self.errormessage:
+                self.errormessage.setText('Error loading attendance data.')
+        finally:
+            if conn:
+                conn.close()
+    
+    def save_attendance(self):
+        """Update the attendance status for the selected pet and refresh display."""
+        if not self.selected_entry_id:
+            if self.errormessage:
+                self.errormessage.setText('Please select an event and pet first.')
+            return
+        
+        new_status = self.attendancestatus.currentText()
+        if new_status == "Select Status":
+            if self.errormessage:
+                self.errormessage.setText('Please select a new attendance status.')
+            return
+        
+        event_text = self.events.currentText()
+        if event_text == "Select Event":
+            if self.errormessage:
+                self.errormessage.setText('Please select an event.')
+            return
+        
+        try:
+            event_id = int(event_text.split('(ID: ')[1].split(')')[0])
+        except:
+            if self.errormessage:
+                self.errormessage.setText('Invalid event selection.')
+            return
+        
+        conn = get_db_connection()
+        if not conn:
+            if self.errormessage:
+                self.errormessage.setText('Database connection failed.')
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE pet_event_entry 
+                SET attendance_status = %s 
+                WHERE entry_id = %s
+            """, (new_status, self.selected_entry_id))
+            
+            conn.commit()
+            
+            if self.errormessage:
+                self.errormessage.setText(f'Attendance status updated to {new_status} successfully!')
+            
+            # Refresh the display
+            self.load_attendance_data(event_id)
+            
+            # Clear selections
+            self.pets.setCurrentIndex(0)
+            self.attendancestatus.setCurrentIndex(0)
+            self.selected_entry_id = None
+            
+        except Error as err:
+            print(f"Error updating attendance: {err}")
+            if conn:
+                conn.rollback()
+            if self.errormessage:
+                self.errormessage.setText('Error updating attendance status.')
+        finally:
+            if conn:
+                conn.close()
 
     def gotoadminmenu(self):
         admmn = adminmenu()
@@ -483,6 +1048,139 @@ class vieweventaw(QDialog):
         super(vieweventaw, self).__init__()
         loadUi('./gui/eventawardsrep.ui', self)
         self.exitbutt.clicked.connect(self.gotoadminmenu)
+        self.errormessage = self.findChild(QtWidgets.QLabel, 'errormessage')
+        
+        # Load award types into the combo box
+        self.load_award_types()
+        
+        # Connect combo box to update table when selection changes
+        self.eventawards.currentIndexChanged.connect(self.load_event_awards)
+        
+        # Load initial data
+        self.load_event_awards()
+    
+    def load_award_types(self):
+        """Grab all the award types from the database and stick them in the dropdown."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT DISTINCT type 
+                FROM awards 
+                ORDER BY type
+            """)
+            
+            award_types = cursor.fetchall()
+            self.eventawards.clear()
+            self.eventawards.addItem("All Awards")  # Default option
+            
+            for award_type in award_types:
+                if award_type[0]:
+                    self.eventawards.addItem(award_type[0])
+        except Error as err:
+            print(f"Error loading award types: {err}")
+        finally:
+            if conn:
+                conn.close()
+    
+    def load_event_awards(self):
+        """Load events with their winning pets and awards based on selected award type."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            
+            # Get selected award type
+            selected_type = self.eventawards.currentText()
+            
+            # Determine if we're looking for special awards or placement awards
+            # Special awards are things like "Best Costume", "Fastest Run", etc.
+            # Placement awards are "Champion", "Runner Up", "1st Place", etc.
+            is_special = 1  # Default to special awards
+            if selected_type and selected_type != "All Awards":
+                # Check if it's a placement award
+                placement_keywords = ['champion', 'runner up', '1st', '2nd', '3rd', 'first', 'second', 'third', 'place']
+                is_placement = any(keyword in selected_type.lower() for keyword in placement_keywords)
+                is_special = 0 if is_placement else 1
+            
+            # Build query - note: awards table might not have isSpecial column, so we'll filter by type instead
+            if selected_type and selected_type != "All Awards":
+                # Filter by specific award type
+                query = """
+                    SELECT e.event_id, e.name, e.date, e.type,
+                           CASE WHEN e.status = 1 THEN 'Open' ELSE 'Closed' END AS event_status,
+                           COALESCE(p.name, 'No winner') AS winning_pet,
+                           COALESCE(a.type, 'No award') AS award_type
+                    FROM events e
+                    LEFT JOIN awards a ON a.event_id = e.event_id AND a.type = %s
+                    LEFT JOIN pets p ON p.pet_id = a.pet_id
+                    WHERE a.type = %s OR a.type IS NULL
+                    ORDER BY e.event_id, a.award_id
+                """
+                cursor.execute(query, (selected_type, selected_type))
+            else:
+                # Show all awards
+                query = """
+                    SELECT e.event_id, e.name, e.date, e.type,
+                           CASE WHEN e.status = 1 THEN 'Open' ELSE 'Closed' END AS event_status,
+                           COALESCE(p.name, 'No winner') AS winning_pet,
+                           COALESCE(a.type, 'No award') AS award_type
+                    FROM events e
+                    LEFT JOIN awards a ON a.event_id = e.event_id
+                    LEFT JOIN pets p ON p.pet_id = a.pet_id
+                    ORDER BY e.event_id, a.award_id
+                """
+                cursor.execute(query)
+            
+            results = cursor.fetchall()
+            
+            # Set up table
+            self.eventawardsstatus.setRowCount(len(results))
+            self.eventawardsstatus.setColumnCount(7)
+            self.eventawardsstatus.setHorizontalHeaderLabels([
+                'Event Id', 'Event Name', 'Event Date', 'Event Type', 'Status', 'Winning Pet', 'Award Type'
+            ])
+            
+            # Populate table
+            for row, data in enumerate(results):
+                event_id = data[0]
+                event_name = data[1] or 'Event'
+                event_date = format_date_string(data[2])
+                event_type = data[3] or 'N/A'
+                event_status = data[4] or 'Unknown'
+                winning_pet = data[5] or 'No winner'
+                award_type = data[6] or 'No award'
+                
+                values = [str(event_id), event_name, event_date, event_type, event_status, winning_pet, award_type]
+                for col, value in enumerate(values):
+                    item = QtWidgets.QTableWidgetItem(str(value))
+                    if col in [1, 4, 5, 6]:  # Event Name, Status, Winning Pet, Award Type
+                        item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
+                    self.eventawardsstatus.setItem(row, col, item)
+            
+            # Make table look good with word wrap and proper sizing
+            self.eventawardsstatus.setWordWrap(True)
+            header = self.eventawardsstatus.horizontalHeader()
+            if header:
+                # Use stretch mode to fill the widget initially, still allows manual resizing
+                header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+            vheader = self.eventawardsstatus.verticalHeader()
+            if vheader:
+                vheader.setVisible(False)
+                vheader.setDefaultSectionSize(40)
+            
+        except Error as err:
+            print(f"Error loading event awards: {err}")
+            if self.errormessage:
+                self.errormessage.setText('Error loading event awards.')
+        finally:
+            if conn:
+                conn.close()
 
     def gotoadminmenu(self):
         admmn = adminmenu()
@@ -496,6 +1194,151 @@ class eventattendancerep(QDialog):
         super(eventattendancerep, self).__init__()
         loadUi('./gui/eventattendancerep.ui', self)
         self.exitbutt.clicked.connect(self.gotoadminmenu)
+        self.totalpetmess = self.findChild(QtWidgets.QLabel, 'totalpetmess')
+        
+        # Load events and attendance statuses into dropdowns
+        self.load_events()
+        self.load_attendance_statuses()
+        
+        # Connect combo boxes to update table when selection changes
+        self.eventawards.currentIndexChanged.connect(self.load_attendance_data)
+        self.eventawards_2.currentIndexChanged.connect(self.load_attendance_data)
+        
+        # Load initial data
+        self.load_attendance_data()
+    
+    def load_events(self):
+        """Pull all events from the database and put them in the first dropdown."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT event_id, name 
+                FROM events 
+                ORDER BY date, time
+            """)
+            
+            events = cursor.fetchall()
+            self.eventawards.clear()
+            self.eventawards.addItem("Select Event")
+            
+            for event_id, event_name in events:
+                display_text = f"{event_name} (ID: {event_id})"
+                self.eventawards.addItem(display_text)
+        except Error as err:
+            print(f"Error loading events: {err}")
+        finally:
+            if conn:
+                conn.close()
+    
+    def load_attendance_statuses(self):
+        """Load all possible attendance statuses into the second dropdown."""
+        self.eventawards_2.clear()
+        self.eventawards_2.addItem("Select Status")
+        self.eventawards_2.addItem("Present")
+        self.eventawards_2.addItem("No Show")
+        self.eventawards_2.addItem("Registered")
+    
+    def load_attendance_data(self):
+        """Load attendance data based on selected event and status."""
+        # Check if both dropdowns have valid selections
+        event_text = self.eventawards.currentText()
+        status_text = self.eventawards_2.currentText()
+        
+        if event_text == "Select Event" or status_text == "Select Status":
+            self.eventawardsstatus.setRowCount(0)
+            self.totalpetmess.setText('')
+            return
+        
+        # Extract event_id from the display text
+        try:
+            event_id = int(event_text.split('(ID: ')[1].split(')')[0])
+        except:
+            self.eventawardsstatus.setRowCount(0)
+            self.totalpetmess.setText('Invalid event selection.')
+            return
+        
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            
+            # Query to get attendance data with total count and owner name
+            query = """
+                SELECT t1.entry_id,
+                       p.pet_id,
+                       p.name AS pet_name,
+                       CONCAT(o.first_name, ' ', o.last_name) AS owner_name,
+                       t1.attendance_status,
+                       (SELECT COUNT(t2.entry_id)
+                        FROM pet_event_entry t2
+                        WHERE t2.event_id = t1.event_id
+                        AND t2.attendance_status = %s) AS total_status_count
+                FROM pet_event_entry t1
+                JOIN pets p ON t1.pet_id = p.pet_id
+                JOIN owners o ON p.owner_id = o.owner_id
+                WHERE t1.event_id = %s
+                AND t1.attendance_status = %s
+            """
+            
+            cursor.execute(query, (status_text, event_id, status_text))
+            results = cursor.fetchall()
+            
+            # Set up table
+            self.eventawardsstatus.setRowCount(len(results))
+            self.eventawardsstatus.setColumnCount(6)
+            self.eventawardsstatus.setHorizontalHeaderLabels([
+                'Entry ID', 'Pet ID', 'Pet Name', 'Owner Name', 'Attendance Status', 'Total Count'
+            ])
+            
+            total_count = 0
+            # Populate table
+            for row, data in enumerate(results):
+                entry_id = data[0]
+                pet_id = data[1]
+                pet_name = data[2] or 'Unknown'
+                owner_name = data[3] or 'Unknown'
+                attendance_status = data[4] or 'Unknown'
+                total_status_count = data[5] or 0
+                
+                if row == 0:
+                    total_count = total_status_count
+                
+                values = [str(entry_id), str(pet_id), pet_name, owner_name, attendance_status, str(total_status_count)]
+                for col, value in enumerate(values):
+                    item = QtWidgets.QTableWidgetItem(str(value))
+                    if col in [2, 3, 4]:  # Pet Name, Owner Name, Attendance Status
+                        item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
+                    self.eventawardsstatus.setItem(row, col, item)
+            
+            # Update total pets message
+            if total_count > 0:
+                self.totalpetmess.setText(f'Total pets with {status_text} status: {total_count}')
+            else:
+                self.totalpetmess.setText(f'No pets found with {status_text} status for this event.')
+            
+            # Make table look good
+            self.eventawardsstatus.setWordWrap(True)
+            header = self.eventawardsstatus.horizontalHeader()
+            if header:
+                # Use stretch mode to fill the widget initially, still allows manual resizing
+                header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+            vheader = self.eventawardsstatus.verticalHeader()
+            if vheader:
+                vheader.setVisible(False)
+                vheader.setDefaultSectionSize(40)
+            
+        except Error as err:
+            print(f"Error loading attendance data: {err}")
+            self.totalpetmess.setText('Error loading attendance data.')
+        finally:
+            if conn:
+                conn.close()
 
     def gotoadminmenu(self):
         admmn = adminmenu()
@@ -509,6 +1352,392 @@ class participantlog(QDialog):
         super(participantlog, self).__init__()
         loadUi('./gui/participantlog.ui', self)
         self.exitbutt.clicked.connect(self.gotoadminmenu)
+        self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes')
+        self.editerrormess = self.findChild(QtWidgets.QLabel, 'editerrormess')
+        
+        # Load participation log data
+        self.load_participation_log()
+    
+    def load_participation_log(self):
+        """Pull all participation log stuff and show names instead of those boring IDs."""
+        conn = get_db_connection()
+        if not conn:
+            if self.owerrormes:
+                self.owerrormes.setText('Database connection failed.')
+            return
+        
+        try:
+            cursor = conn.cursor()
+            
+            # Grab all the log entries but swap out IDs for actual names
+            cursor.execute("""
+                SELECT pl.log_id, 
+                       CONCAT(o.first_name, ' ', o.last_name) as owner_name,
+                       pl.action_type, 
+                       pl.action_date, 
+                       pl.action_time,
+                       e_orig.name as original_event_name,
+                       e_new.name as new_event_name,
+                       pl.reason, 
+                       pl.refund_amount, 
+                       pl.top_up_amount
+                FROM participation_log pl
+                LEFT JOIN event_registration er ON pl.registration_id = er.registration_id
+                LEFT JOIN owners o ON er.owner_id = o.owner_id
+                LEFT JOIN events e_orig ON pl.original_event_id = e_orig.event_id
+                LEFT JOIN events e_new ON pl.new_event_id = e_new.event_id
+                ORDER BY pl.action_date DESC, pl.action_time DESC
+            """)
+            
+            logs = cursor.fetchall()
+            
+            # Set up table
+            self.participantlog.setRowCount(len(logs))
+            self.participantlog.setColumnCount(10)
+            self.participantlog.setHorizontalHeaderLabels([
+                'Log ID', 'Owner Name', 'Action Type', 'Action Date', 'Action Time',
+                'Original Event', 'New Event', 'Reason', 'Refund Amount', 'Top Up Amount'
+            ])
+            
+            # Populate table
+            for row, log in enumerate(logs):
+                for col, value in enumerate(log):
+                    if value is None:
+                        display_value = 'N/A'
+                    elif isinstance(value, (int, float)):
+                        if col == 8 or col == 9:  # refund_amount or top_up_amount
+                            display_value = f"₱{float(value):.2f}" if value else '₱0.00'
+                        else:
+                            display_value = str(value)
+                    else:
+                        display_value = str(value)
+                    
+                    item = QtWidgets.QTableWidgetItem(display_value)
+                    # Let text wrap so we can see everything without it getting cut off
+                    if col in [1, 2, 5, 6, 7]:  # Owner Name, Action Type, Original Event, New Event, Reason
+                        item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
+                    self.participantlog.setItem(row, col, item)
+            
+            # Turn on word wrap so long text doesn't get chopped
+            self.participantlog.setWordWrap(True)
+            
+            # Use stretch mode to fill the widget initially, still allows manual resizing
+            header = self.participantlog.horizontalHeader()
+            if header:
+                header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+            vheader = self.participantlog.verticalHeader()
+            if vheader:
+                vheader.setVisible(False)
+                # Make rows taller so wrapped text fits nicely
+                vheader.setDefaultSectionSize(40)
+            
+        except Error as err:
+            print(f"Error loading participation log: {err}")
+            if self.owerrormes:
+                self.owerrormes.setText('Error loading participation log.')
+        finally:
+            if conn:
+                conn.close()
+
+    def gotoadminmenu(self):
+        admmn = adminmenu()
+        widget.addWidget(admmn)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+        
+# --------------------------------------------------------------------------------------------------------------------
+
+class awardpetscore(QDialog):
+    def __init__(self):
+        super(awardpetscore, self).__init__()
+        loadUi('./gui/awardgivingpetscore.ui', self)
+        self.petexitbutt.clicked.connect(self.gotoadminmenu)
+        self.savebutt.clicked.connect(self.save_score_and_award)
+        self.message = self.findChild(QtWidgets.QLabel, 'message')
+        
+        # Load events and awards
+        self.load_events()
+        self.load_awards()
+        
+        # Connect event selection to load pets and display data
+        self.pastevents.currentIndexChanged.connect(self.on_event_selected)
+        self.petswhoparticipated.currentIndexChanged.connect(self.on_pet_selected)
+        
+        # Set score limit to 10.00
+        self.doubleSpinBox.setMaximum(10.00)
+        self.doubleSpinBox.setMinimum(0.00)
+        self.doubleSpinBox.setDecimals(2)
+        
+        # Store selected pet_id and entry_id
+        self.selected_pet_id = None
+        self.selected_entry_id = None
+    
+    def load_events(self):
+        """Grab all events and put them in the dropdown."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT event_id, name 
+                FROM events 
+                ORDER BY date DESC, time DESC
+            """)
+            
+            events = cursor.fetchall()
+            self.pastevents.clear()
+            self.pastevents.addItem("Select Event")
+            
+            for event_id, event_name in events:
+                display_text = f"{event_name} (ID: {event_id})"
+                self.pastevents.addItem(display_text)
+        except Error as err:
+            print(f"Error loading events: {err}")
+        finally:
+            if conn:
+                conn.close()
+    
+    def load_awards(self):
+        """Load award types into the awards dropdown."""
+        self.awards.clear()
+        self.awards.addItem("Select Award")
+        self.awards.addItem("Champion")
+        self.awards.addItem("Runner Up")
+        self.awards.addItem("Best Costume")
+        self.awards.addItem("Fastest Run")
+        self.awards.addItem("Best Talent")
+        self.awards.addItem("Most Photogenic")
+        self.awards.addItem("Most Spirited")
+        self.awards.addItem("1st Place")
+        self.awards.addItem("2nd Place")
+        self.awards.addItem("3rd Place")
+    
+    def on_event_selected(self):
+        """When an event is selected, load pets and display data."""
+        event_text = self.pastevents.currentText()
+        if event_text == "Select Event":
+            self.eventstatus.setRowCount(0)
+            self.petswhoparticipated.clear()
+            return
+        
+        # Extract event_id
+        try:
+            event_id = int(event_text.split('(ID: ')[1].split(')')[0])
+        except:
+            self.eventstatus.setRowCount(0)
+            return
+        
+        # Load pets for this event
+        self.load_pets_for_event(event_id)
+        
+        # Load and display event data
+        self.load_event_data(event_id)
+    
+    def load_pets_for_event(self, event_id):
+        """Load all pets registered for the selected event."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT DISTINCT p.pet_id, p.name
+                FROM pet_event_entry pee
+                JOIN pets p ON pee.pet_id = p.pet_id
+                WHERE pee.event_id = %s
+                ORDER BY p.name
+            """, (event_id,))
+            
+            pets = cursor.fetchall()
+            self.petswhoparticipated.clear()
+            self.petswhoparticipated.addItem("Select Pet")
+            
+            for pet_id, pet_name in pets:
+                display_text = f"{pet_name} (ID: {pet_id})"
+                self.petswhoparticipated.addItem(display_text)
+        except Error as err:
+            print(f"Error loading pets: {err}")
+        finally:
+            if conn:
+                conn.close()
+    
+    def on_pet_selected(self):
+        """When a pet is selected, store its ID for saving."""
+        pet_text = self.petswhoparticipated.currentText()
+        event_text = self.pastevents.currentText()
+        
+        if pet_text == "Select Pet" or event_text == "Select Event":
+            self.selected_pet_id = None
+            self.selected_entry_id = None
+            return
+        
+        try:
+            pet_id = int(pet_text.split('(ID: ')[1].split(')')[0])
+            event_id = int(event_text.split('(ID: ')[1].split(')')[0])
+            
+            conn = get_db_connection()
+            if conn:
+                try:
+                    cursor = conn.cursor()
+                    cursor.execute("""
+                        SELECT entry_id 
+                        FROM pet_event_entry 
+                        WHERE pet_id = %s AND event_id = %s
+                        LIMIT 1
+                    """, (pet_id, event_id))
+                    
+                    result = cursor.fetchone()
+                    if result:
+                        self.selected_entry_id = result[0]
+                        self.selected_pet_id = pet_id
+                finally:
+                    conn.close()
+        except:
+            self.selected_pet_id = None
+            self.selected_entry_id = None
+    
+    def load_event_data(self, event_id):
+        """Load event data with pets registered and display in table."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT e.event_id, e.name, p.pet_id, p.name AS pets_registered
+                FROM events e
+                LEFT JOIN pet_event_entry pee ON e.event_id = pee.event_id
+                LEFT JOIN pets p ON pee.pet_id = p.pet_id
+                WHERE e.event_id = %s
+                ORDER BY p.name
+            """, (event_id,))
+            
+            results = cursor.fetchall()
+            
+            # Set up table
+            self.eventstatus.setRowCount(len(results))
+            self.eventstatus.setColumnCount(4)
+            self.eventstatus.setHorizontalHeaderLabels([
+                'Event ID', 'Event Name', 'Pet ID', 'Pet Name'
+            ])
+            
+            # Populate table
+            for row, data in enumerate(results):
+                event_id_val = data[0]
+                event_name = data[1] or 'Event'
+                pet_id = data[2] if data[2] is not None else 'N/A'
+                pet_name = data[3] if data[3] is not None else 'No pets registered'
+                
+                values = [str(event_id_val), event_name, str(pet_id), pet_name]
+                for col, value in enumerate(values):
+                    item = QtWidgets.QTableWidgetItem(str(value))
+                    if col in [1, 3]:  # Event Name, Pet Name
+                        item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
+                    self.eventstatus.setItem(row, col, item)
+            
+            # Use stretch mode to fill the widget
+            self.eventstatus.setWordWrap(True)
+            header = self.eventstatus.horizontalHeader()
+            if header:
+                header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+            vheader = self.eventstatus.verticalHeader()
+            if vheader:
+                vheader.setVisible(False)
+                vheader.setDefaultSectionSize(40)
+            
+        except Error as err:
+            print(f"Error loading event data: {err}")
+            if self.message:
+                self.message.setText('Error loading event data.')
+        finally:
+            if conn:
+                conn.close()
+    
+    def save_score_and_award(self):
+        """Save the score and award for the selected pet."""
+        if not self.selected_entry_id or not self.selected_pet_id:
+            if self.message:
+                self.message.setText('Please select an event and pet first.')
+            return
+        
+        award_type = self.awards.currentText()
+        if award_type == "Select Award":
+            if self.message:
+                self.message.setText('Please select an award type.')
+            return
+        
+        score = self.doubleSpinBox.value()
+        event_text = self.pastevents.currentText()
+        
+        if event_text == "Select Event":
+            if self.message:
+                self.message.setText('Please select an event.')
+            return
+        
+        try:
+            event_id = int(event_text.split('(ID: ')[1].split(')')[0])
+        except:
+            if self.message:
+                self.message.setText('Invalid event selection.')
+            return
+        
+        conn = get_db_connection()
+        if not conn:
+            if self.message:
+                self.message.setText('Database connection failed.')
+            return
+        
+        try:
+            cursor = conn.cursor()
+            
+            # Update pet_result in pet_event_entry
+            cursor.execute("""
+                UPDATE pet_event_entry 
+                SET pet_result = %s 
+                WHERE entry_id = %s
+            """, (score, self.selected_entry_id))
+            
+            # Insert award
+            cursor.execute("SELECT MAX(award_id) FROM awards")
+            max_award_id = cursor.fetchone()[0]
+            new_award_id = (max_award_id if max_award_id is not None else 0) + 1
+            
+            from datetime import datetime
+            now = datetime.now()
+            award_date = now.strftime("%Y-%m-%d")
+            
+            cursor.execute("""
+                INSERT INTO awards (award_id, pet_id, type, description, date, event_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (new_award_id, self.selected_pet_id, award_type, f'Score: {score:.2f}', award_date, event_id))
+            
+            conn.commit()
+            
+            if self.message:
+                self.message.setText(f'Score {score:.2f} and award "{award_type}" saved successfully!')
+            
+            # Refresh the display
+            self.load_event_data(event_id)
+            
+            # Clear selections
+            self.petswhoparticipated.setCurrentIndex(0)
+            self.awards.setCurrentIndex(0)
+            self.doubleSpinBox.setValue(0.00)
+            self.selected_pet_id = None
+            self.selected_entry_id = None
+            
+        except Error as err:
+            print(f"Error saving score and award: {err}")
+            if conn:
+                conn.rollback()
+            if self.message:
+                self.message.setText('Error saving score and award.')
+        finally:
+            if conn:
+                conn.close()
 
     def gotoadminmenu(self):
         admmn = adminmenu()
@@ -527,7 +1756,7 @@ class mainmenu(QDialog):
         self.eventsbutt.clicked.connect(self.gotoevents)
         self.entrybutt.clicked.connect(self.gotoentries)
         self.statusbutt.clicked.connect(self.gotostatus)
-        self.mmexitbutt.clicked.connect(self.quit_application)
+        self.mmexitbutt.clicked.connect(self.gotoregscreen)
         self.calendarWidget.selectionChanged.connect(self.on_date_selected)
         
         # Set up the mini "what's happening today" table
@@ -679,9 +1908,10 @@ class mainmenu(QDialog):
             if conn:
                 conn.close()
 
-    def quit_application(self):
-        app.quit()
-
+    def gotoregscreen(self):
+        reg = RegisterScreen()
+        widget.addWidget(reg)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
 
     def gotoentries(self):
         entrs= entries()
@@ -728,9 +1958,54 @@ class petregistration(QDialog):
         self.petsex.addItems(['Male', 'Female', 'Unknown'])
         self.petsize.addItems(['Small', 'Medium', 'Large', 'Extra Large']) 
 
+        # Load breeds into combo box
+        self.load_breeds()
+        
+        # Connect breed combo box to handle "Other" option
+        self.petbreed.currentIndexChanged.connect(self.on_breed_selected)
+        
+        # Make the combo box editable so users can type custom breed names when "Other" is selected
+        self.petbreed.setEditable(True)
+
         self.petexitbutt.clicked.connect(self.gotommenu)
         self.petregisterbutt.clicked.connect(self.petregisfunc)
-        self.petregiserr = self.findChild(QtWidgets.QLabel, 'petregiserr') 
+        self.petregiserr = self.findChild(QtWidgets.QLabel, 'petregiserr')
+    
+    def load_breeds(self):
+        """Grab all breeds from the database and add them to the combo box, plus "Other" option."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT DISTINCT breed_name 
+                FROM breeds 
+                ORDER BY breed_name
+            """)
+            
+            breeds = cursor.fetchall()
+            self.petbreed.clear()
+            
+            # Add all breeds
+            for breed in breeds:
+                if breed[0]:
+                    self.petbreed.addItem(breed[0])
+            
+            # Add "Other" option at the end
+            self.petbreed.addItem("Other")
+        except Error as err:
+            print(f"Error loading breeds: {err}")
+        finally:
+            if conn:
+                conn.close()
+    
+    def on_breed_selected(self):
+        """Handle when breed selection changes - if "Other" is selected, clear the text so user can type."""
+        if self.petbreed.currentText() == "Other":
+            # Clear the text so user can type their custom breed
+            self.petbreed.setEditText("") 
         
     def petregisfunc(self):
         petname = self.petname.text().strip()
@@ -738,11 +2013,20 @@ class petregistration(QDialog):
         petsex = self.petsex.currentText().strip()
         petweight = self.petweight.value()
         petsize_name = self.petsize.currentText().strip()
-        petbreed = self.petbreed.text().strip()
+        petbreed = self.petbreed.currentText().strip()  # Changed from .text() to .currentText() for combo box
         petnotes = self.petnotes.toPlainText().strip()
 
         self.petregiserr.setText('') 
 
+        # Handle "Other" breed option - get the custom breed name from the editable combo box
+        if petbreed == "Other" or (petbreed == "" and self.petbreed.currentIndex() == self.petbreed.count() - 1):
+            # User selected "Other" - get the text they typed
+            custom_breed = self.petbreed.currentText().strip()
+            if not custom_breed or custom_breed == "Other":
+                self.petregiserr.setText('Please enter a custom breed name when "Other" is selected.')
+                return
+            petbreed = custom_breed  # Use the custom breed name
+        
         if not petname or petage == 0 or not petbreed:
             self.petregiserr.setText('Please fill in Pet Name, Age (must be > 0), and Breed.')
             return
@@ -1329,6 +2613,22 @@ class enrollevent(QDialog):
                     (entry_id, registration_id, pet_id, event_id, attendance_status)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (new_entry_id, new_reg_id, pet['pet_id'], event['event_id'], 'Registered'))
+                
+                # Log to participation_log
+                cursor.execute("SELECT MAX(log_id) FROM participation_log")
+                max_log_id = cursor.fetchone()[0]
+                new_log_id = (max_log_id if max_log_id is not None else 0) + 1
+                
+                action_date = now.strftime("%Y-%m-%d")
+                action_time = now.strftime("%H:%M:%S")
+                
+                cursor.execute("""
+                    INSERT INTO participation_log
+                    (log_id, registration_id, action_type, action_date, action_time,
+                     original_event_id, new_event_id, reason, refund_amount, top_up_amount)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                """, (new_log_id, new_reg_id, 'Paid', action_date, action_time,
+                      event['event_id'], None, 'New registration', 0.00, 0.00))
                 
                 conn.commit()
                 
@@ -2748,6 +4048,10 @@ class transfer(QDialog):
                         if new_fee > current_amount:
                             additional = new_fee - current_amount
                             self.petwarningsize.setText(f"Additional ₱{additional:.2f} to be processed. Do you wish to proceed?")
+                        elif new_fee < current_amount:
+                            difference = current_amount - new_fee
+                            new_total = current_amount - difference
+                            self.petwarningsize.setText(f"Fee reduction: ₱{difference:.2f}. New total: ₱{new_total:.2f}. Do you wish to proceed?")
                         else:
                             self.petwarningsize.setText('No additional payment required.')
                     else:
@@ -2795,11 +4099,16 @@ class transfer(QDialog):
                         if new_fee > current_amount:
                             additional = new_fee - current_amount
                             self.newevent.addItem(f"Additional Payment Required: ₱{additional:.2f}")
+                            self.newevent.addItem(f"New Total: ₱{current_amount + additional:.2f}")
                         elif new_fee < current_amount:
-                            # No refund, but show that no additional payment needed
-                            self.newevent.addItem("No additional payment required (no refund for lower fees)")
+                            # New event costs less - subtract the difference
+                            difference = current_amount - new_fee
+                            new_total = current_amount - difference
+                            self.newevent.addItem(f"Fee Reduction: ₱{difference:.2f}")
+                            self.newevent.addItem(f"New Total: ₱{new_total:.2f}")
                         else:
                             self.newevent.addItem("No additional payment required")
+                            self.newevent.addItem(f"Total: ₱{current_amount:.2f}")
                     else:
                         self.newevent.addItem("")  # Empty line
                         self.newevent.addItem("Could not retrieve current payment")
@@ -2854,9 +4163,14 @@ class transfer(QDialog):
                 current_amount = result[0]
                 new_fee = event_to['base_fee']
                 
-                # Check if additional payment is needed
-                if new_fee > current_amount:
-                    additional = new_fee - current_amount
+                # Calculate the fee difference
+                fee_difference = new_fee - current_amount
+                
+                # Calculate new total amount
+                if fee_difference > 0:
+                    # New event costs more - add the additional fees
+                    new_total_amount = current_amount + fee_difference
+                    additional = fee_difference
                     # Show confirmation dialog
                     from PyQt6.QtWidgets import QMessageBox
                     reply = QMessageBox.question(
@@ -2868,18 +4182,26 @@ class transfer(QDialog):
                     
                     if reply != QMessageBox.StandardButton.Yes:
                         return
-                    
-                    # Update payment
-                    from datetime import datetime
-                    now = datetime.now()
-                    payment_date = now.strftime("%Y-%m-%d")
-                    payment_time = now.strftime("%H:%M:%S")
-                    
-                    cursor.execute("""
-                        UPDATE event_registration
-                        SET total_amount_paid = %s, payment_date = %s, payment_time = %s
-                        WHERE registration_id = %s
-                    """, (new_fee, payment_date, payment_time, self.selected_registration_id))
+                elif fee_difference < 0:
+                    # New event costs less - subtract the difference
+                    new_total_amount = current_amount + fee_difference  # fee_difference is negative, so this subtracts
+                    additional = 0.00
+                else:
+                    # Same price
+                    new_total_amount = current_amount
+                    additional = 0.00
+                
+                # Update payment with new total amount
+                from datetime import datetime
+                now = datetime.now()
+                payment_date = now.strftime("%Y-%m-%d")
+                payment_time = now.strftime("%H:%M:%S")
+                
+                cursor.execute("""
+                    UPDATE event_registration
+                    SET total_amount_paid = %s, payment_date = %s, payment_time = %s
+                    WHERE registration_id = %s
+                """, (new_total_amount, payment_date, payment_time, self.selected_registration_id))
                 
                 # Update event_registration to new event
                 cursor.execute("""
@@ -2888,21 +4210,42 @@ class transfer(QDialog):
                     WHERE registration_id = %s
                 """, (event_to['event_id'], self.selected_registration_id))
                 
-                # Update pet_event_entry to new event for all pets in this registration
+                # Delete the original pet_event_entry entries (remove previous entry)
                 if hasattr(self, 'selected_pet_ids') and self.selected_pet_ids:
                     for pet_id in self.selected_pet_ids:
                         cursor.execute("""
-                            UPDATE pet_event_entry
-                            SET event_id = %s
-                            WHERE registration_id = %s AND pet_id = %s
-                        """, (event_to['event_id'], self.selected_registration_id, pet_id))
+                            DELETE FROM pet_event_entry
+                            WHERE registration_id = %s AND pet_id = %s AND event_id = %s
+                        """, (self.selected_registration_id, pet_id, event_from['event_id']))
                 else:
                     # Fallback to single pet
                     cursor.execute("""
-                        UPDATE pet_event_entry
-                        SET event_id = %s
-                        WHERE registration_id = %s AND pet_id = %s
-                    """, (event_to['event_id'], self.selected_registration_id, self.selected_pet_id))
+                        DELETE FROM pet_event_entry
+                        WHERE registration_id = %s AND pet_id = %s AND event_id = %s
+                    """, (self.selected_registration_id, self.selected_pet_id, event_from['event_id']))
+                
+                # Create new pet_event_entry entries for the new event
+                # Get the starting entry ID once
+                cursor.execute("SELECT MAX(entry_id) FROM pet_event_entry")
+                max_entry_id = cursor.fetchone()[0]
+                next_entry_id = (max_entry_id if max_entry_id is not None else 0) + 1
+                
+                if hasattr(self, 'selected_pet_ids') and self.selected_pet_ids:
+                    for idx, pet_id in enumerate(self.selected_pet_ids):
+                        new_entry_id = next_entry_id + idx
+                        
+                        cursor.execute("""
+                            INSERT INTO pet_event_entry
+                            (entry_id, registration_id, pet_id, event_id, attendance_status)
+                            VALUES (%s, %s, %s, %s, %s)
+                        """, (new_entry_id, self.selected_registration_id, pet_id, event_to['event_id'], 'Registered'))
+                else:
+                    # Fallback to single pet
+                    cursor.execute("""
+                        INSERT INTO pet_event_entry
+                        (entry_id, registration_id, pet_id, event_id, attendance_status)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """, (next_entry_id, self.selected_registration_id, self.selected_pet_id, event_to['event_id'], 'Registered'))
                 
                 # Log the transfer
                 cursor.execute("SELECT MAX(log_id) FROM participation_log")
@@ -2914,6 +4257,10 @@ class transfer(QDialog):
                 action_date = now.strftime("%Y-%m-%d")
                 action_time = now.strftime("%H:%M:%S")
                 
+                # Calculate refund and top-up amounts
+                refund_amount = abs(fee_difference) if fee_difference < 0 else 0.00
+                top_up_amount = fee_difference if fee_difference > 0 else 0.00
+                
                 cursor.execute("""
                     INSERT INTO participation_log
                     (log_id, registration_id, action_type, action_date, action_time,
@@ -2921,7 +4268,7 @@ class transfer(QDialog):
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (new_log_id, self.selected_registration_id, 'Transferred', action_date, action_time,
                       event_from['event_id'], event_to['event_id'], 'Event transfer', 
-                      0.00, new_fee - current_amount if new_fee > current_amount else 0.00))
+                      refund_amount, top_up_amount))
                 
                 conn.commit()
                 

@@ -35,7 +35,7 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>images/ownerreg7.png</pixmap>
+    <pixmap>images/admin sign up.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -54,11 +54,11 @@
     </rect>
    </property>
   </widget>
-  <widget class="QLineEdit" name="owfirstname">
+  <widget class="QLineEdit" name="username">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>340</y>
+     <x>440</x>
+     <y>320</y>
      <width>501</width>
      <height>21</height>
     </rect>
@@ -82,11 +82,11 @@ background-color: rgb(255, 255, 255);</string>
     <string>Required</string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="owlastname">
+  <widget class="QLineEdit" name="password">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>390</y>
+     <x>440</x>
+     <y>520</y>
      <width>501</width>
      <height>21</height>
     </rect>
@@ -109,76 +109,25 @@ background-color: rgb(255, 255, 255);</string>
     <string>Required </string>
    </property>
   </widget>
-  <widget class="QLineEdit" name="owemail">
+  <widget class="QPushButton" name="signupbutt">
    <property name="geometry">
     <rect>
-     <x>460</x>
-     <y>460</y>
-     <width>501</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Berlin Sans FB Demi</family>
-     <pointsize>14</pointsize>
-     <bold>true</bold>
-    </font>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">color: rgb(20, 33, 68);
-background-color: rgb(255, 255, 255);</string>
-   </property>
-   <property name="placeholderText">
-    <string>Optional</string>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="ownumber">
-   <property name="geometry">
-    <rect>
-     <x>460</x>
-     <y>540</y>
-     <width>501</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Berlin Sans FB Demi</family>
-     <pointsize>14</pointsize>
-     <bold>true</bold>
-    </font>
-   </property>
-   <property name="tabletTracking">
-    <bool>true</bool>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">color: rgb(20, 33, 68);
-background-color: rgb(255, 255, 255);</string>
-   </property>
-   <property name="placeholderText">
-    <string>Optional</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="owregbutt">
-   <property name="geometry">
-    <rect>
-     <x>520</x>
-     <y>640</y>
-     <width>181</width>
-     <height>61</height>
+     <x>370</x>
+     <y>590</y>
+     <width>231</width>
+     <height>71</height>
     </rect>
    </property>
    <property name="cursor">
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#owregbutt{
+    <string notr="true">QWidget#signupbutt{
 background-color: rgb(54, 113, 145);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#owregbutt:hover {
+QWidget#signupbutt:hover {
     
     background-color: rgb(251, 176, 59); 
     border: 2px solid #388E3C; 
@@ -187,15 +136,15 @@ QWidget#owregbutt:hover {
 }</string>
    </property>
    <property name="text">
-    <string>Register</string>
+    <string>Sign Up</string>
    </property>
   </widget>
-  <widget class="QLabel" name="owerrormes">
+  <widget class="QLabel" name="logerrormes">
    <property name="geometry">
     <rect>
-     <x>510</x>
-     <y>610</y>
-     <width>201</width>
+     <x>290</x>
+     <y>560</y>
+     <width>671</width>
      <height>20</height>
     </rect>
    </property>
@@ -218,25 +167,81 @@ color: rgb(251, 176, 59);</string>
     <string/>
    </property>
   </widget>
-  <widget class="QPushButton" name="adminlogbutt">
+  <widget class="QLineEdit" name="firstname">
    <property name="geometry">
     <rect>
-     <x>940</x>
-     <y>640</y>
-     <width>181</width>
-     <height>61</height>
+     <x>440</x>
+     <y>390</y>
+     <width>501</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Berlin Sans FB Demi</family>
+     <pointsize>14</pointsize>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">
+color: rgb(20, 33, 68);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="placeholderText">
+    <string>Required</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="lastname">
+   <property name="geometry">
+    <rect>
+     <x>440</x>
+     <y>450</y>
+     <width>501</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Berlin Sans FB Demi</family>
+     <pointsize>14</pointsize>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="autoFillBackground">
+    <bool>false</bool>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">
+color: rgb(20, 33, 68);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="placeholderText">
+    <string>Required</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="exitbutt">
+   <property name="geometry">
+    <rect>
+     <x>650</x>
+     <y>590</y>
+     <width>231</width>
+     <height>71</height>
     </rect>
    </property>
    <property name="cursor">
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#adminlogbutt{
+    <string notr="true">QWidget#exitbutt{
 background-color: rgb(54, 113, 145);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#adminlogbutt:hover {
+QWidget#exitbutt:hover {
     
     background-color: rgb(251, 176, 59); 
     border: 2px solid #388E3C; 
@@ -245,7 +250,7 @@ QWidget#adminlogbutt:hover {
 }</string>
    </property>
    <property name="text">
-    <string>Log As Admin</string>
+    <string>Exit</string>
    </property>
   </widget>
  </widget>

@@ -95,6 +95,53 @@ QWidget#regbutt:hover {
     </rect>
    </property>
   </widget>
+  <widget class="QPushButton" name="exitbutt">
+   <property name="geometry">
+    <rect>
+     <x>530</x>
+     <y>630</y>
+     <width>181</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Arial Black</family>
+     <pointsize>12</pointsize>
+     <italic>false</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+   <property name="mouseTracking">
+    <bool>true</bool>
+   </property>
+   <property name="tabletTracking">
+    <bool>true</bool>
+   </property>
+   <property name="acceptDrops">
+    <bool>false</bool>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QWidget#exitbutt{
+background-color: rgb(54, 113, 145);
+font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
+border-radius: 10px;}
+
+QWidget#exitbutt:hover {
+    
+    background-color: rgb(251, 176, 59); 
+    border: 2px solid #388E3C; 
+    padding: 10px 20px; 
+    font-size: 15px; 
+}</string>
+   </property>
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

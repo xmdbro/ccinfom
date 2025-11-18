@@ -309,12 +309,30 @@ INSERT INTO participation_log (log_id, registration_id, action_type, action_date
 -- of every pet entry, including owner details, pet size/breed, event specifics,
 -- awards won, and a history of registration activity.
 
+CREATE TABLE admin_log (
+    admin_id INT NOT NULL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(50) NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL
+);
+
+INSERT INTO admin_log (admin_id, username, password, first_name, last_name) VALUES
+(1, 'chazinocencio', 'chazwick', 'Chaz', 'Inocencio'),
+(2, 'juliazarate', 'julia', 'Julia', 'Zarate'),
+(3, 'lancechu', 'lance', 'Lance', 'Chu'),
+(4, 'michaelfajardo', 'michael', 'Michael', 'Fajardo');
+
 USE pet_show;
 
 SELECT *
 FROM owners
 ORDER BY owner_id DESC
 LIMIT 5;
+
+SELECT *
+FROM admin_log
+ORDER BY admin_id DESC;
 
 SELECT *
 FROM pets

@@ -35,7 +35,7 @@
     <string/>
    </property>
    <property name="pixmap">
-    <pixmap>images/adminmenu.png</pixmap>
+    <pixmap>images/adminmenu1.png</pixmap>
    </property>
    <property name="scaledContents">
     <bool>true</bool>
@@ -57,8 +57,8 @@
   <widget class="QPushButton" name="viewattenbuttt">
    <property name="geometry">
     <rect>
-     <x>900</x>
-     <y>480</y>
+     <x>940</x>
+     <y>470</y>
      <width>291</width>
      <height>61</height>
     </rect>
@@ -87,8 +87,8 @@ QWidget#viewattenbuttt:hover {
   <widget class="QPushButton" name="assscoresawpetbutt">
    <property name="geometry">
     <rect>
-     <x>900</x>
-     <y>270</y>
+     <x>940</x>
+     <y>260</y>
      <width>291</width>
      <height>61</height>
     </rect>
@@ -117,8 +117,8 @@ QWidget#assscoresawpetbutt:hover {
   <widget class="QPushButton" name="upattendancebutt">
    <property name="geometry">
     <rect>
-     <x>900</x>
-     <y>340</y>
+     <x>940</x>
+     <y>330</y>
      <width>291</width>
      <height>61</height>
     </rect>
@@ -147,8 +147,8 @@ QWidget#upattendancebutt:hover {
   <widget class="QPushButton" name="viewpartbutt">
    <property name="geometry">
     <rect>
-     <x>900</x>
-     <y>550</y>
+     <x>940</x>
+     <y>540</y>
      <width>291</width>
      <height>61</height>
     </rect>
@@ -177,8 +177,8 @@ QWidget#viewpartbutt:hover {
   <widget class="QPushButton" name="mmexitbutt">
    <property name="geometry">
     <rect>
-     <x>970</x>
-     <y>620</y>
+     <x>1010</x>
+     <y>610</y>
      <width>151</width>
      <height>41</height>
     </rect>
@@ -207,8 +207,8 @@ QWidget#mmexitbutt:hover {
   <widget class="QPushButton" name="vieweventawbutt">
    <property name="geometry">
     <rect>
-     <x>900</x>
-     <y>410</y>
+     <x>940</x>
+     <y>400</y>
      <width>291</width>
      <height>61</height>
     </rect>
@@ -237,10 +237,10 @@ QWidget#vieweventawbutt:hover {
   <widget class="QTableWidget" name="eventstatus">
    <property name="geometry">
     <rect>
-     <x>90</x>
-     <y>240</y>
-     <width>741</width>
-     <height>451</height>
+     <x>40</x>
+     <y>230</y>
+     <width>881</width>
+     <height>501</height>
     </rect>
    </property>
    <property name="font">

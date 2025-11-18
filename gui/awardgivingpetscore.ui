@@ -84,7 +84,7 @@ QWidget#petexitbutt:hover {
     <string>Exit</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="petregisterbutt">
+  <widget class="QPushButton" name="savebutt">
    <property name="geometry">
     <rect>
      <x>760</x>
@@ -97,12 +97,12 @@ QWidget#petexitbutt:hover {
     <cursorShape>PointingHandCursor</cursorShape>
    </property>
    <property name="styleSheet">
-    <string notr="true">QWidget#petregisterbutt{
+    <string notr="true">QWidget#savebutt{
 background-color: rgb(251, 176, 59);
 font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
-QWidget#petregisterbutt:hover {
+QWidget#savebutt:hover {
     
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
@@ -111,7 +111,7 @@ QWidget#petregisterbutt:hover {
 }</string>
    </property>
    <property name="text">
-    <string>Register</string>
+    <string>Save</string>
    </property>
   </widget>
   <widget class="QLabel" name="owerusername">
@@ -157,7 +157,7 @@ color: rgb(40, 52, 84);
 background-color: rgb(255, 255, 255);</string>
    </property>
   </widget>
-  <widget class="QLabel" name="petregiserr">
+  <widget class="QLabel" name="message">
    <property name="geometry">
     <rect>
      <x>690</x>
@@ -192,7 +192,7 @@ color: rgb(251, 176, 59);</string>
    <property name="geometry">
     <rect>
      <x>690</x>
-     <y>340</y>
+     <y>360</y>
      <width>421</width>
      <height>22</height>
     </rect>
@@ -221,6 +221,140 @@ background-color: rgb(255, 255, 255);</string>
    </property>
    <property name="styleSheet">
     <string notr="true">color: rgb(20, 33, 68);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>220</x>
+     <y>260</y>
+     <width>101</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Berlin Sans FB Demi</family>
+     <pointsize>12</pointsize>
+     <italic>false</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="text">
+    <string>Past Events:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3">
+   <property name="geometry">
+    <rect>
+     <x>690</x>
+     <y>340</y>
+     <width>101</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Berlin Sans FB Demi</family>
+     <pointsize>12</pointsize>
+     <italic>false</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="text">
+    <string>Select Pet:</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_4">
+   <property name="geometry">
+    <rect>
+     <x>690</x>
+     <y>420</y>
+     <width>101</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Berlin Sans FB Demi</family>
+     <pointsize>12</pointsize>
+     <italic>false</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="text">
+    <string>Awards:</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="awards">
+   <property name="geometry">
+    <rect>
+     <x>690</x>
+     <y>450</y>
+     <width>421</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_5">
+   <property name="geometry">
+    <rect>
+     <x>690</x>
+     <y>520</y>
+     <width>101</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Berlin Sans FB Demi</family>
+     <pointsize>12</pointsize>
+     <italic>false</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
+background-color: rgb(255, 255, 255);</string>
+   </property>
+   <property name="text">
+    <string>Score:</string>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="doubleSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>750</x>
+     <y>520</y>
+     <width>361</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(40, 52, 84);
 background-color: rgb(255, 255, 255);</string>
    </property>
   </widget>

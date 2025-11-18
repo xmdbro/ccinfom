@@ -57,7 +57,7 @@
   <widget class="QPushButton" name="eventsbutt">
    <property name="geometry">
     <rect>
-     <x>700</x>
+     <x>870</x>
      <y>10</y>
      <width>161</width>
      <height>51</height>
@@ -97,7 +97,7 @@ QWidget#eventsbutt:hover {
   <widget class="QPushButton" name="eventregbutt">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>690</x>
      <y>10</y>
      <width>161</width>
      <height>51</height>
@@ -127,7 +127,7 @@ QWidget#eventregbutt:hover {
   <widget class="QPushButton" name="petregbutt">
    <property name="geometry">
     <rect>
-     <x>520</x>
+     <x>690</x>
      <y>70</y>
      <width>161</width>
      <height>41</height>
@@ -157,7 +157,7 @@ QWidget#petregbutt:hover {
   <widget class="QPushButton" name="editinbutt">
    <property name="geometry">
     <rect>
-     <x>880</x>
+     <x>1050</x>
      <y>10</y>
      <width>151</width>
      <height>51</height>
@@ -188,9 +188,9 @@ QWidget#editinbutt:hover {
    <property name="geometry">
     <rect>
      <x>1050</x>
-     <y>70</y>
+     <y>760</y>
      <width>151</width>
-     <height>41</height>
+     <height>31</height>
     </rect>
    </property>
    <property name="cursor">
@@ -206,7 +206,7 @@ QWidget#mmexitbutt:hover {
     
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
-    padding: 10px 20px; 
+    padding: 8px 20px; 
     font-size: 15px; 
 }</string>
    </property>
@@ -217,7 +217,7 @@ QWidget#mmexitbutt:hover {
   <widget class="QPushButton" name="entrybutt">
    <property name="geometry">
     <rect>
-     <x>700</x>
+     <x>870</x>
      <y>70</y>
      <width>161</width>
      <height>41</height>
@@ -268,7 +268,7 @@ background-color: rgb(255, 255, 255);</string>
   <widget class="QPushButton" name="statusbutt">
    <property name="geometry">
     <rect>
-     <x>880</x>
+     <x>1050</x>
      <y>70</y>
      <width>151</width>
      <height>41</height>

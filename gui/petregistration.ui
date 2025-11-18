@@ -332,32 +332,34 @@ color: rgb(251, 176, 59);</string>
    </property>
   </widget>
   <widget class="QComboBox" name="petbreed">
-   <property name="geometry">
-    <rect>
-     <x>840</x>
-     <y>460</y>
-     <width>161</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Berlin Sans FB Demi</family>
-     <pointsize>14</pointsize>
-     <bold>true</bold>
-    </font>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">color: rgb(20, 33, 68);
+   <property name="geometry">
+    <rect>
+     <x>830</x>
+     <y>460</y>
+     <width>181</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Berlin Sans FB Demi</family>
+     <pointsize>9</pointsize>
+     <italic>false</italic>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">font: 700 9pt &quot;Berlin Sans FB Demi&quot;; 
+color: rgb(20, 33, 68);
 background-color: rgb(255, 255, 255);</string>
-   </property>
+   </property>
    <property name="editable">
     <bool>true</bool>
    </property>
    <property name="lineEdit" stdset="0">
     <string>Required</string>
    </property>
-  </widget>
+  </widget>
  </widget>
  <resources/>
  <connections/>
