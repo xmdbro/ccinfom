@@ -13,6 +13,57 @@ DB_CONFIG = {
     'database': 'pet_show'
 }
 
+_OWNER_CONTEXT_TEMPLATE = {
+    'owner_id': None,
+    'username': None,
+    'first_name': None,
+    'last_name': None,
+    'email': None,
+    'contact_number': None
+}
+ACTIVE_OWNER = _OWNER_CONTEXT_TEMPLATE.copy()
+
+
+def set_active_owner(owner_id, username=None, first_name=None, last_name=None, email=None, contact_number=None):
+    """Persist the currently authenticated owner's basic profile."""
+    global ACTIVE_OWNER
+    ACTIVE_OWNER = {
+        'owner_id': owner_id,
+        'username': username,
+        'first_name': first_name,
+        'last_name': last_name,
+        'email': email,
+        'contact_number': contact_number
+    }
+
+
+def clear_active_owner():
+    """Reset the cached owner context (e.g., after logout)."""
+    global ACTIVE_OWNER
+    ACTIVE_OWNER = _OWNER_CONTEXT_TEMPLATE.copy()
+
+
+def get_active_owner():
+    """Return the active owner's context, if any."""
+    if ACTIVE_OWNER.get('owner_id') is None:
+        return None
+    return ACTIVE_OWNER
+
+
+def get_active_owner_id():
+    """Convenience helper: return the current owner_id or None."""
+    owner = get_active_owner()
+    return owner['owner_id'] if owner else None
+
+
+def update_active_owner_details(**kwargs):
+    """Update selected fields of the cached owner context."""
+    if ACTIVE_OWNER.get('owner_id') is None:
+        return
+    for key, value in kwargs.items():
+        if key in ACTIVE_OWNER and value is not None:
+            ACTIVE_OWNER[key] = value
+            
 def get_db_connection():
     """Open a MySQL connection using the config above."""
     try:
@@ -220,6 +271,20 @@ def setup_database():
                 last_name VARCHAR(50) NOT NULL
             )
             """)
+            
+            # owner_log
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS owner_log (
+                owner_id INT NOT NULL PRIMARY KEY,
+                username VARCHAR(50) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                first_name VARCHAR(50) NOT NULL,
+                last_name VARCHAR(50) NOT NULL,
+                email TEXT,
+                contact_number TEXT,
+                FOREIGN KEY (owner_id) REFERENCES owners(owner_id)
+            )
+            """)
            
             # size_category
             cursor.executemany("INSERT IGNORE INTO size_category (size_id, size_name) VALUES (%s, %s)", [
@@ -278,6 +343,22 @@ def setup_database():
                 (23, 15, 'Sunny', 2, 4, 'Female', 16.00, 0, 'Good with crowds'), (24, 4, 'Biscuit', 1, 2, 'Female', 5.00, 0, 'Cute costume favorite'),
                 (25, 6, 'Gizmo', 1, 2, 'Male', 4.40, 0, 'Quick and curious')
             ])
+            
+            # Ensure seeded owners have login credentials by default
+            cursor.execute("""
+                INSERT INTO owner_log (owner_id, username, password, first_name, last_name, email, contact_number)
+                SELECT o.owner_id,
+                       CONCAT('owner', o.owner_id),
+                       'owner123',
+                       o.first_name,
+                       o.last_name,
+                       o.email,
+                       o.contact_number
+                FROM owners o
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM owner_log ol WHERE ol.owner_id = o.owner_id
+                )
+            """)
 
             # pet_breed_junction
             cursor.executemany("INSERT IGNORE INTO pet_breed_junction (pet_id, breed_id) VALUES (%s, %s)", [
@@ -354,12 +435,13 @@ class RegisterScreen(QDialog):
     def __init__(self):
         super(RegisterScreen, self).__init__()
         loadUi('./gui/registerscreen.ui', self) 
-        self.regbutt.clicked.connect(self.gotoownerregistration)
+        clear_active_owner()
+        self.loginbutt.clicked.connect(self.gotologin)
         self.exitbutt.clicked.connect(self.quit_application)
 
-    def gotoownerregistration(self):
-        ownerreg = OwnerRegisScreen()
-        widget.addWidget(ownerreg)
+    def gotologin(self):
+        log = login()
+        widget.addWidget(log)
         widget.setCurrentIndex(widget.currentIndex() + 1)
 
     def quit_application(self):
@@ -367,15 +449,126 @@ class RegisterScreen(QDialog):
 
 # --------------------------------------------------------------------------------------------------------------------
 
+class login(QDialog):
+    def __init__(self):
+        super(login, self).__init__()
+        loadUi('./gui/login.ui', self)
+        self.exitbutt.clicked.connect(self.gotoregscreen)
+        self.adminlogbutt.clicked.connect(self.gotoadminlog)
+        self.ownerlogbutt.clicked.connect(self.ownerlogbut)
+
+    def gotoregscreen(self):
+        reg = RegisterScreen()
+        widget.addWidget(reg)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+    
+    def gotoadminlog(self):
+        admlog = adminlog()
+        widget.addWidget(admlog)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+    
+    def ownerlogbut(self):
+        owlog = ownerlogin()
+        widget.addWidget(owlog)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+        
+# --------------------------------------------------------------------------------------------------------------------
+class ownerlogin(QDialog):
+    def __init__(self):
+        super(ownerlogin, self).__init__()
+        loadUi('./gui/ownerlogin.ui', self)
+        self.loginbutt.clicked.connect(self.login)
+        self.exitbutt.clicked.connect(self.gotoregscreen)
+        self.signupbutt.clicked.connect(self.gotoowonersignup)
+        self.logerrormes = self.findChild(QtWidgets.QLabel, 'logerrormes')
+
+        # Mask password input like the admin login screen
+        self.password.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
+
+    def gotoregscreen(self):
+        reg = RegisterScreen()
+        widget.addWidget(reg)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+    
+    def gotoowonersignup(self):
+        owreg = OwnerRegisScreen()
+        widget.addWidget(owreg)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
+    def login(self):
+        """Authenticate owner credentials."""
+        username = self.username.text().strip()
+        password = self.password.text().strip()
+
+        if self.logerrormes:
+            self.logerrormes.setText('')
+
+        if not username or not password:
+            if self.logerrormes:
+                self.logerrormes.setText('Please enter both username and password.')
+            return
+
+        conn = get_db_connection()
+        if not conn:
+            if self.logerrormes:
+                self.logerrormes.setText('Database connection failed.')
+            return
+
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT owner_id, username, first_name, last_name, email, contact_number
+                FROM owner_log
+                WHERE username = %s AND password = %s
+            """, (username, password))
+
+            result = cursor.fetchone()
+            if result:
+                owner_id, db_username, first_name, last_name, email, contact_number = result
+                set_active_owner(
+                    owner_id=owner_id,
+                    username=db_username,
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    contact_number=contact_number
+                )
+                self.gotommenu()
+            else:
+                if self.logerrormes:
+                    self.logerrormes.setText('Invalid username or password.')
+        except Error as err:
+            print(f"Owner login error: {err}")
+            if self.logerrormes:
+                self.logerrormes.setText('Login failed. Please try again.')
+        finally:
+            if conn:
+                conn.close()
+
+    def gotommenu(self):
+        mmenu = mainmenu()
+        widget.addWidget(mmenu)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+        
+# --------------------------------------------------------------------------------------------------------------------
+
 class OwnerRegisScreen(QDialog):
     def __init__(self):
         super(OwnerRegisScreen, self).__init__()
         loadUi('./gui/ownerregistration.ui', self)
         self.owregbutt.clicked.connect(self.registerfunc)
-        self.adminlogbutt.clicked.connect(self.gotoadminlog)
-        self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes') 
+        self.exitbutt.clicked.connect(self.gotoregscreen)
+        self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes')
+        self.password.setEchoMode(QtWidgets.QLineEdit.EchoMode.Password)
+        
+    def gotoregscreen(self):
+        reg = RegisterScreen()
+        widget.addWidget(reg)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
         
     def registerfunc(self):
+        username = self.username.text().strip()
+        password = self.password.text().strip()
         userfirstname = self.owfirstname.text().strip()
         userlastname = self.owlastname.text().strip()
         useremail = self.owemail.text().strip()
@@ -383,8 +576,8 @@ class OwnerRegisScreen(QDialog):
         
         self.owerrormes.setText('') 
 
-        if (len(userfirstname) == 0 or len(userlastname) == 0):
-            self.owerrormes.setText('Please fill in required fields.')
+        if not username or not password or not userfirstname or not userlastname:
+            self.owerrormes.setText('Please fill in all required fields.')  
             return
         
         if not useremail and not usernumber:
@@ -397,6 +590,12 @@ class OwnerRegisScreen(QDialog):
             try:
                 cursor = conn.cursor()
                 
+                # Ensure username is unique
+                cursor.execute("SELECT owner_id FROM owner_log WHERE username = %s", (username,))
+                if cursor.fetchone():
+                    self.owerrormes.setText('Username already exists. Please choose another.')
+                    return
+                
                 # Get owner_id
                 cursor.execute("SELECT MAX(owner_id) FROM owners")
                 max_id = cursor.fetchone()[0]
@@ -407,16 +606,22 @@ class OwnerRegisScreen(QDialog):
                 data = (new_owner_id, userfirstname, userlastname, useremail or None, usernumber or None)
                 
                 cursor.execute(sql, data)
+                # Store login credentials
+                cursor.execute("""
+                    INSERT INTO owner_log (owner_id, username, password, first_name, last_name, email, contact_number)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (new_owner_id, username, password, userfirstname, userlastname, useremail, usernumber))
                 conn.commit()
-                
-                # Verify the insert was successful
-                cursor.execute("SELECT owner_id FROM owners WHERE owner_id = %s", (new_owner_id,))
-                if cursor.fetchone():
-                    print(f"Owner successfully registered with ID: {new_owner_id}")
-                    self.gotommenu()
-
-                else:
-                    raise Error("Insert verification failed")
+                set_active_owner(
+                    owner_id=new_owner_id,
+                    username=username,
+                    first_name=userfirstname,
+                    last_name=userlastname,
+                    email=useremail,
+                    contact_number=usernumber
+                )
+                print(f"Owner successfully registered with ID: {new_owner_id}")
+                self.gotommenu()
 
             except Error as err:
                 print(f"Database INSERT Error (Owner): {err}")
@@ -437,11 +642,6 @@ class OwnerRegisScreen(QDialog):
     def gotommenu(self):
         mmenu = mainmenu()
         widget.addWidget(mmenu)
-        widget.setCurrentIndex(widget.currentIndex() + 1)
-    
-    def gotoadminlog(self):
-        admlog = adminlog()
-        widget.addWidget(admlog)
         widget.setCurrentIndex(widget.currentIndex() + 1)
     
 # --------------------------------------------------------------------------------------------------------------------
@@ -1833,9 +2033,12 @@ class awardpetscore(QDialog):
 # --------------------------------------------------------------------------------------------------------------------
 
 class mainmenu(QDialog):
-    def __init__(self):
+    def __init__(self, owner_context=None):
         super(mainmenu, self).__init__()
         loadUi('./gui/mainmenu.ui', self)
+        self.owner_context = owner_context or get_active_owner()
+        if not self.owner_context:
+            print("Warning: main menu opened without an active owner; owner-specific actions may fail.")
         self.petregbutt.clicked.connect(self.gotopetregis)
         self.eventregbutt.clicked.connect(self.gotoenrollev)
         self.editinbutt.clicked.connect(self.gotoeditinfo)
@@ -1995,6 +2198,7 @@ class mainmenu(QDialog):
                 conn.close()
 
     def gotoregscreen(self):
+        clear_active_owner()
         reg = RegisterScreen()
         widget.addWidget(reg)
         widget.setCurrentIndex(widget.currentIndex() + 1)
@@ -2003,11 +2207,6 @@ class mainmenu(QDialog):
         entrs= entries()
         widget.addWidget(entrs)
         widget.setCurrentIndex(widget.currentIndex() + 1)
-    
-    def gotostatus(self):
-        sts= status()
-        widget.addWidget(sts)
-        widget.setCurrentIndex(widget.currentIndex() + 1)
 
     def gotoevents(self):
         evs = viewevents()
@@ -2015,29 +2214,29 @@ class mainmenu(QDialog):
         widget.setCurrentIndex(widget.currentIndex() + 1)
 
     def gotostatus(self):
-        status_screen = yourstatuss()
+        status_screen = yourstatuss(self.owner_context)
         widget.addWidget(status_screen)
         widget.setCurrentIndex(widget.currentIndex() + 1)
 
     def gotopetregis(self):
-        petregis = petregistration()
+        petregis = petregistration(self.owner_context)
         widget.addWidget(petregis)
         widget.setCurrentIndex(widget.currentIndex() + 1)
     
     def gotoenrollev(self):
-        enrollev = enrollevent()
+        enrollev = enrollevent(self.owner_context)
         widget.addWidget(enrollev)
         widget.setCurrentIndex(widget.currentIndex() + 1)
     
     def gotoeditinfo(self):
-        editin = editinf()
+        editin = editinf(self.owner_context)
         widget.addWidget(editin)
         widget.setCurrentIndex(widget.currentIndex() + 1)
 
 # --------------------------------------------------------------------------------------------------------------------
 
 class petregistration(QDialog):
-    def __init__(self):
+    def __init__(self, owner_context=None):
         super(petregistration, self).__init__()
         loadUi('./gui/petregistration.ui', self)
 
@@ -2056,6 +2255,8 @@ class petregistration(QDialog):
         self.petexitbutt.clicked.connect(self.gotommenu)
         self.petregisterbutt.clicked.connect(self.petregisfunc)
         self.petregiserr = self.findChild(QtWidgets.QLabel, 'petregiserr')
+        self.owner_context = owner_context or get_active_owner()
+        self.owner_id = self.owner_context['owner_id'] if self.owner_context else None
     
     def load_breeds(self):
         """Grab all breeds from the database and add them to the combo box, plus "Other" option."""
@@ -2126,14 +2327,10 @@ class petregistration(QDialog):
         if conn:
             try:
                 cursor = conn.cursor()
-                
-                cursor.execute("SELECT MAX(owner_id) FROM owners")
-                current_owner_id = cursor.fetchone()[0]
-                
-                if current_owner_id is None:
-                    self.petregiserr.setText('Error: No owner found. Please register an owner first.')
+                owner_id = self.owner_id or get_active_owner_id()
+                if owner_id is None:
+                    self.petregiserr.setText('Please log in as an owner before registering pets.')
                     return
-
 
                 cursor.execute("SELECT MAX(pet_id) FROM pets")
                 max_pet_id = cursor.fetchone()[0]
@@ -2164,7 +2361,7 @@ class petregistration(QDialog):
                 """
                 data_pet = (
                     new_pet_id, 
-                    current_owner_id, 
+                    owner_id, 
                     petname, 
                     actual_size_id,
                     petage, 
@@ -2232,7 +2429,7 @@ class petrgistrd(QDialog):
 # --------------------------------------------------------------------------------------------------------------------
 
 class enrollevent(QDialog):
-    def __init__(self):
+    def __init__(self, owner_context=None):
         super(enrollevent, self).__init__()
         loadUi('./gui/enrollevent.ui', self)
         self.enrollevexitbutt.clicked.connect(self.gotommenu)
@@ -2246,8 +2443,8 @@ class enrollevent(QDialog):
         self.owerusername = self.findChild(QtWidgets.QLabel, 'owerusername')
         
         # Keep track of which owner/pet/event we're dealing with
-        self.current_owner_id = None
-        self.selected_event_id = None
+        self.owner_context = owner_context or get_active_owner()
+        self.current_owner_id = self.owner_context['owner_id'] if self.owner_context else None
         self.selected_pet_id = None
         self.event_data = {}
         
@@ -2265,28 +2462,23 @@ class enrollevent(QDialog):
         self.load_pets()
         
     def load_owner_data(self):
-        "Grab the most recently added owner and show their name."
+        "Load the active owner's name for display."
+        if self.current_owner_id is None:
+            self.owerusername.setText('Please log in as an owner first.')
+            return
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
-                cursor.execute("SELECT MAX(owner_id) FROM owners")
-                result = cursor.fetchone()
-                
-                if result and result[0] is not None:
-                    self.current_owner_id = result[0]
-                    
-                    # Get owner name
-                    cursor.execute("""
-                        SELECT first_name, last_name 
-                        FROM owners 
-                        WHERE owner_id = %s
-                    """, (self.current_owner_id,))
-                    
-                    owner_data = cursor.fetchone()
-                    if owner_data:
-                        owner_name = f"{owner_data[0]} {owner_data[1]}"
-                        self.owerusername.setText(owner_name)
+                cursor.execute("""
+                    SELECT first_name, last_name 
+                    FROM owners 
+                    WHERE owner_id = %s
+                """, (self.current_owner_id,))
+                owner_data = cursor.fetchone()
+                if owner_data:
+                    owner_name = f"{owner_data[0]} {owner_data[1]}"
+                    self.owerusername.setText(owner_name)
             except Error as err:
                 print(f"Error loading owner data: {err}")
             finally:
@@ -2763,7 +2955,7 @@ class evenrolled(QDialog):
 # --------------------------------------------------------------------------------------------------------------------
 
 class editinf(QDialog):
-    def __init__(self):
+    def __init__(self, owner_context=None):
         super(editinf, self).__init__()
         loadUi('./gui/editinfo.ui', self)
         self.editexitbutt.clicked.connect(self.gotommenu)
@@ -2777,40 +2969,35 @@ class editinf(QDialog):
         self.editerrormess = self.findChild(QtWidgets.QLabel, 'editerrormess')
         
         # Load current owner and pet data
-        self.current_owner_id = None
+        self.owner_context = owner_context or get_active_owner()
+        self.current_owner_id = self.owner_context['owner_id'] if self.owner_context else None
         self.loadownerdata()
         self.loadpets()
         
     def loadownerdata(self):
         """Load the latest owner's info into the text fields."""
+        if self.current_owner_id is None:
+            self.owerrormes.setText('No owner found. Please log in first.')
+            return
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
+                cursor.execute("""
+                    SELECT first_name, last_name, email, contact_number 
+                    FROM owners 
+                    WHERE owner_id = %s
+                """, (self.current_owner_id,))
                 
-                # Just grab the most recently added owner
-                cursor.execute("SELECT MAX(owner_id) FROM owners")
-                result = cursor.fetchone()
+                owner_data = cursor.fetchone()
                 
-                if result and result[0] is not None:
-                    self.current_owner_id = result[0]
-                    
-                    # Get owner details
-                    cursor.execute("""
-                        SELECT first_name, last_name, email, contact_number 
-                        FROM owners 
-                        WHERE owner_id = %s
-                    """, (self.current_owner_id,))
-                    
-                    owner_data = cursor.fetchone()
-                    
-                    if owner_data:
-                        self.editfirst.setText(owner_data[0] or '')
-                        self.editlast.setText(owner_data[1] or '')
-                        self.editemail.setText(owner_data[2] or '')
-                        self.editnum.setText(owner_data[3] or '')
+                if owner_data:
+                    self.editfirst.setText(owner_data[0] or '')
+                    self.editlast.setText(owner_data[1] or '')
+                    self.editemail.setText(owner_data[2] or '')
+                    self.editnum.setText(owner_data[3] or '')
                 else:
-                    self.owerrormes.setText('No owner found. Please register first.')
+                    self.owerrormes.setText('Owner record not found. Please re-login.')
                     
             except Error as err:
                 print(f"Error loading owner data: {err}")
@@ -2906,6 +3093,12 @@ class editinf(QDialog):
                 if cursor.fetchone():
                     print(f"Owner information successfully updated for ID: {self.current_owner_id}")
                     self.owerrormes.setText('Owner information saved successfully!')
+                    update_active_owner_details(
+                        first_name=first_name,
+                        last_name=last_name,
+                        email=email,
+                        contact_number=contact_number
+                    )
                 else:
                     raise Error("Update verification failed")
                     
@@ -3479,14 +3672,15 @@ class viewevents(QDialog):
 # --------------------------------------------------------------------------------------------------------------------
 
 class yourstatuss(QDialog):
-    def __init__(self):
+    def __init__(self, owner_context=None):
         super(yourstatuss, self).__init__()
         loadUi('./gui/status.ui', self)
         self.exitbutt.clicked.connect(self.gotommenu)
         self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes')
         self.editerrormess = self.findChild(QtWidgets.QLabel, 'editerrormess')
         self.status_table = self.findChild(QtWidgets.QTableWidget, 'yourstatus')
-        self.current_owner_id = None
+        self.owner_context = owner_context or get_active_owner()
+        self.current_owner_id = self.owner_context['owner_id'] if self.owner_context else None
         self.owner_name = ''
         self.configure_table()
         self.load_owner_data()
@@ -3508,25 +3702,25 @@ class yourstatuss(QDialog):
             vheader.setDefaultSectionSize(28)
 
     def load_owner_data(self):
+        if self.current_owner_id is None:
+            if self.owerrormes:
+                self.owerrormes.setText('Please log in to view your status.')
+            return
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
-                cursor.execute("SELECT MAX(owner_id) FROM owners")
-                result = cursor.fetchone()
-                if result and result[0] is not None:
-                    self.current_owner_id = result[0]
-                    cursor.execute("""
-                        SELECT first_name, last_name 
-                        FROM owners 
-                        WHERE owner_id = %s
-                    """, (self.current_owner_id,))
-                    owner_data = cursor.fetchone()
-                    if owner_data:
-                        self.owner_name = f"{owner_data[0]} {owner_data[1]}".strip()
+                cursor.execute("""
+                    SELECT first_name, last_name 
+                    FROM owners 
+                    WHERE owner_id = %s
+                """, (self.current_owner_id,))
+                owner_data = cursor.fetchone()
+                if owner_data:
+                    self.owner_name = f"{owner_data[0]} {owner_data[1]}".strip()
                 else:
                     if self.owerrormes:
-                        self.owerrormes.setText('No owner found. Please register first.')
+                        self.owerrormes.setText('Owner record not found. Please re-login.')
             except Error as err:
                 print(f"Error loading owner data (status): {err}")
                 if self.owerrormes:
@@ -3761,7 +3955,7 @@ class entries(QDialog):
 
 
 class transfer(QDialog):
-    def __init__(self, preselected_event_id=None):
+    def __init__(self, preselected_event_id=None, owner_context=None):
         super(transfer, self).__init__()
         loadUi('./gui/transfer.ui', self)
         self.transexit.clicked.connect(self.gotoentries)
@@ -3773,7 +3967,8 @@ class transfer(QDialog):
         self.owerusername = self.findChild(QtWidgets.QLabel, 'owerusername')
         
         # Stuff we keep around while you're on this screen
-        self.current_owner_id = None
+        self.owner_context = owner_context or get_active_owner()
+        self.current_owner_id = self.owner_context['owner_id'] if self.owner_context else None
         self.selected_registration_id = None
         self.selected_pet_id = None
         self.selected_pet_ids = []  # Store all pet IDs for the registration
@@ -3789,28 +3984,24 @@ class transfer(QDialog):
         self.load_enrolled_events(preselected_event_id)
     
     def load_owner_data(self):
-        """Get the latest owner and show their name at the top."""
+        """Get the active owner and show their name at the top."""
+        if self.current_owner_id is None:
+            self.owerusername.setText('Please log in as an owner first.')
+            return
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
-                cursor.execute("SELECT MAX(owner_id) FROM owners")
-                result = cursor.fetchone()
+                cursor.execute("""
+                    SELECT first_name, last_name 
+                    FROM owners 
+                    WHERE owner_id = %s
+                """, (self.current_owner_id,))
                 
-                if result and result[0] is not None:
-                    self.current_owner_id = result[0]
-                    
-                    # Get owner name
-                    cursor.execute("""
-                        SELECT first_name, last_name 
-                        FROM owners 
-                        WHERE owner_id = %s
-                    """, (self.current_owner_id,))
-                    
-                    owner_data = cursor.fetchone()
-                    if owner_data:
-                        owner_name = f"{owner_data[0]} {owner_data[1]}"
-                        self.owerusername.setText(owner_name)
+                owner_data = cursor.fetchone()
+                if owner_data:
+                    owner_name = f"{owner_data[0]} {owner_data[1]}"
+                    self.owerusername.setText(owner_name)
             except Error as err:
                 print(f"Error loading owner data: {err}")
             finally:
@@ -4394,7 +4585,7 @@ class transfer(QDialog):
 # --------------------------------------------------------------------------------------------------------------------
 
 class withdraw(QDialog):
-    def __init__(self, preselected_event_id=None):
+    def __init__(self, preselected_event_id=None, owner_context=None):
         super(withdraw, self).__init__()
         loadUi('./gui/withdraw.ui', self)
         self.withexit.clicked.connect(self.gotoentries)
@@ -4407,7 +4598,8 @@ class withdraw(QDialog):
         self.currententry = self.findChild(QtWidgets.QListWidget, 'currententry')
         
         # Store data
-        self.current_owner_id = None
+        self.owner_context = owner_context or get_active_owner()
+        self.current_owner_id = self.owner_context['owner_id'] if self.owner_context else None
         self.selected_registration_id = None
         self.selected_pet_ids = []
         self.event_from_dict = {}
@@ -4420,28 +4612,24 @@ class withdraw(QDialog):
         self.load_enrolled_events(preselected_event_id)
     
     def load_owner_data(self):
-        """Grab the latest owner and show their name on top."""
+        """Grab the active owner and show their name on top."""
+        if self.current_owner_id is None:
+            self.owerusername.setText('Please log in as an owner first.')
+            return
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
-                cursor.execute("SELECT MAX(owner_id) FROM owners")
-                result = cursor.fetchone()
+                cursor.execute("""
+                    SELECT first_name, last_name 
+                    FROM owners 
+                    WHERE owner_id = %s
+                """, (self.current_owner_id,))
                 
-                if result and result[0] is not None:
-                    self.current_owner_id = result[0]
-                    
-                    # Get owner name
-                    cursor.execute("""
-                        SELECT first_name, last_name 
-                        FROM owners 
-                        WHERE owner_id = %s
-                    """, (self.current_owner_id,))
-                    
-                    owner_data = cursor.fetchone()
-                    if owner_data:
-                        owner_name = f"{owner_data[0]} {owner_data[1]}"
-                        self.owerusername.setText(owner_name)
+                owner_data = cursor.fetchone()
+                if owner_data:
+                    owner_name = f"{owner_data[0]} {owner_data[1]}"
+                    self.owerusername.setText(owner_name)
             except Error as err:
                 print(f"Error loading owner data: {err}")
             finally:
