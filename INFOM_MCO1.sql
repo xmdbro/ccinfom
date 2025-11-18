@@ -224,32 +224,33 @@ CREATE TABLE pet_event_entry (
 );
 
 INSERT INTO pet_event_entry (entry_id, registration_id, pet_id, event_id, attendance_status, pet_result) VALUES
-(1, 1, 1, 1, 'Present', 8.7),     -- Rico in Dog Fun Run
-(2, 2, 3, 4, 'Present', 9.3),     -- Luna in Costume Contest
-(3, 3, 5, 2, 'Present', 9.8),     -- Max in Agility
-(4, 4, 6, 10, 'Present', 8.9),    -- Bella in Frisbee
-(5, 5, 7, 8, 'Present', 9.4),     -- Bruno in Tug-of-War
-(6, 6, 9, 9, 'Present', 8.2),     -- Milo in Parade
-(7, 7, 10, 1, 'Present', 8.6),    -- Nala in Dog Fun Run
-(8, 8, 12, 11, 'Present', 9.7),   -- Coco in Photo Booth
-(9, 9, 13, 8, 'No Show', 0.0),    -- Thor registered for Tug but no-show
-(10, 10, 15, 2, 'Present', 9.9),  -- Daisy in Agility
-(11, 11, 16, 6, 'Present', 9.5),  -- Ollie in Fastest Fetch
-(12, 12, 18, 7, 'Present', 9.1),  -- Gigi in Talent Show
-(13, 13, 19, 4, 'Present', 8.8),  -- Poppy in Costume Contest
-(14, 14, 21, 8, 'Present', 9.6),  -- Rex in Tug-of-War
-(15, 15, 22, 9, 'Present', 8.4),  -- Buddy in Parade
-(16, 16, 2, 11, 'Present', 9.2),  -- Pip in Photo Booth
-(17, 17, 24, 4, 'Present', 8.9),  -- Biscuit in Costume Contest
-(18, 18, 5, 3, 'Present', 9.0),   -- Max now in Obedience Challenge
-(19, 3, 8, 2, 'Present', 8.7),    -- Fiona in Agility
-(20, 5, 23, 9, 'Present', 8.5);   -- Sunny in Parade
+(1, 1, 1, 1, 'Registered', 0.0),     -- Rico in Dog Fun Run
+(2, 2, 3, 4, 'Registered', 0.0),     -- Luna in Costume Contest
+(3, 3, 5, 2, 'Registered', 0.0),     -- Max in Agility
+(4, 4, 6, 10, 'Registered', 0.0),    -- Bella in Frisbee
+(5, 5, 7, 8, 'Registered', 0.0),     -- Bruno in Tug-of-War
+(6, 6, 9, 9, 'Registered', 0.0),     -- Milo in Parade
+(7, 7, 10, 1, 'Registered', 0.0),    -- Nala in Dog Fun Run
+(8, 8, 12, 11, 'Registered', 0.0),   -- Coco in Photo Booth
+(9, 9, 13, 8, 'Registered', 0.0),    -- Thor in Tug of War
+(10, 10, 15, 2, 'Registered', 0.0),  -- Daisy in Agility
+(11, 11, 16, 6, 'Registered', 0.0),  -- Ollie in Fastest Fetch
+(12, 12, 18, 7, 'Registered', 0.0),  -- Gigi in Talent Show
+(13, 13, 19, 4, 'Registered', 0.0),  -- Poppy in Costume Contest
+(14, 14, 21, 8, 'Registered', 0.0),  -- Rex in Tug-of-War
+(15, 15, 22, 9, 'Registered', 0.0),  -- Buddy in Parade
+(16, 16, 2, 11, 'Registered', 0.0),  -- Pip in Photo Booth
+(17, 17, 24, 4, 'Registered', 0.0),  -- Biscuit in Costume Contest
+(18, 18, 5, 3, 'Registered', 0.0),   -- Max now in Obedience Challenge
+(19, 3, 8, 2, 'Registered', 0.0),    -- Fiona in Agility
+(20, 5, 23, 9, 'Registered', 0.0);   -- Sunny in Parade
 -- just to note, numbers here are just averaged from 6 to 10, assuming that each event only has a rating of highest average score (1-10)
 
 CREATE TABLE awards (
     award_id INT NOT NULL PRIMARY KEY,
     pet_id INT NOT NULL,
-    type VARCHAR(100) NOT NULL,
+    is_special TINYINT(1) NOT NULL,
+    award_name VARCHAR(100) NOT NULL,
     description TEXT,
     date DATE NOT NULL,
     event_id INT NOT NULL,
@@ -257,19 +258,23 @@ CREATE TABLE awards (
     CONSTRAINT fk_award_event FOREIGN KEY (event_id) REFERENCES events(event_id)
 );
 
-INSERT INTO awards (award_id, pet_id, type, description, date, event_id) VALUES
-(1, 3, 'Best Costume - 1st Place', 'Pirate-themed costume, high creativity', '2025-11-21', 4),
-(2, 19, 'Best Costume - 2nd Place', 'Colorful tutu and hat', '2025-11-21', 4),
-(3, 5, 'Agility - Fastest Run', 'Completed course fastest in novice division', '2025-11-21', 2),
-(4, 15, 'Frisbee - Best Catch', 'Long-distance catch accuracy', '2025-11-23', 10),
-(5, 1, 'Fun Run - Top Veteran', 'Top among 3-5 year old category', '2025-11-21', 1),
-(6, 16, 'Fastest Fetch - Winner', 'Fastest retrieve time', '2025-11-22', 6),
-(7, 18, 'Best Talent', 'Multiple tricks performed with style', '2025-11-22', 7),
-(8, 7, 'Strongest Dog - Runner Up', 'Excellent tug strength in heavy weight class', '2025-11-22', 8),
-(9, 22, 'Parade - Most Cheerful', 'Engaged crowd with playful antics', '2025-11-23', 9),
-(10, 12, 'Photo Booth - Most Photogenic', 'Great poses and expressiveness', '2025-11-23', 11),
-(11, 10, 'Fun Run - Most Spirited', 'High energy throughout', '2025-11-21', 1),
-(12, 21, 'Strongest Dog - Champion', 'Champion of tug-of-war heavy class', '2025-11-22', 8);
+INSERT INTO awards (award_id, pet_id, is_special, award_name, description, date, event_id) VALUES
+(1,  NULL, 0, 'Best Costume - 1st Place', '1st place winner for best costume', '2025-11-21', 4),
+(2,  NULL, 0, 'Best Costume - 2nd Place', '2nd place winner for best costume', '2025-11-21', 4),
+(3,  NULL, 1, 'Agility - Fastest Run', 'Special award for fastest run in agility course', '2025-11-21', 2),
+(4,  NULL, 1, 'Frisbee - Best Catch', 'Special award for best frisbee catch', '2025-11-23', 10),
+(5,  NULL, 1, 'Fun Run - Top Veteran', 'Special award for top veteran in fun run', '2025-11-21', 1),
+(6,  NULL, 1, 'Fastest Fetch - Winner', 'Special award for fastest fetch time', '2025-11-22', 6),
+(7,  NULL, 1, 'Best Talent', 'Special award for best talent performance', '2025-11-22', 7),
+(8,  NULL, 0, 'Strongest Dog - Runner Up', 'Runner up in strongest dog (heavy weight)', '2025-11-22', 8),
+(9,  NULL, 1, 'Parade - Most Cheerful', 'Special award for most cheerful parade participant', '2025-11-23', 9),
+(10, NULL, 1, 'Photo Booth - Most Photogenic', 'Special award for most photogenic photo booth entry', '2025-11-23', 11),
+(11, NULL, 1, 'Fun Run - Most Spirited', 'Special award for most spirited fun run participant', '2025-11-21', 1),
+(12, NULL, 0, 'Strongest Dog - Champion', 'Champion of strongest dog (heavy weight)', '2025-11-22', 8),
+(13, NULL, 0, 'Obedience - 1st Place', '1st place in obedience', '2025-11-28', 3),
+(14, NULL, 0, 'Obedience - 2nd Place', '2nd place in obedience', '2025-11-28', 3),
+(15, NULL, 1, 'Look-Alike - Best Pair', 'Special award for best look‑alike pair', '2025-11-29', 5),
+(16, NULL, 1, 'Look-Alike - Most Creative', 'Special award for most creative look‑alike pair', '2025-11-29', 5);
 
 CREATE TABLE participation_log (
     log_id INT NOT NULL PRIMARY KEY,
@@ -296,7 +301,7 @@ INSERT INTO participation_log (log_id, registration_id, action_type, action_date
 (6, 6, 'Paid', '2025-11-09', '08:30:00', 9, NULL, 'Paid and confirmed', 0.00, 0.00),
 (7, 7, 'Modified', '2025-11-09', '09:20:00', 1, NULL, 'Added another pet later', 0.00, 0.00),
 (8, 8, 'Paid', '2025-11-10', '10:05:00', 11, NULL, 'Payment done at cashier', 0.00, 0.00),
-(9, 9, 'No Show Logged', '2025-11-22', '16:00:00', 8, NULL, 'Dog did not attend tug-of-war', 0.00, 0.00),
+(9, 9, 'Paid', '2025-11-22', '16:00:00', 8, NULL, 'Paid and Confirmed', 0.00, 0.00),
 (10, 10, 'Transfer Requested', '2025-11-12', '09:55:00', 2, NULL, 'Owner asked to move to mini agility (pending)', 0.00, 0.00),
 (11, 11, 'Paid', '2025-11-11', '10:05:00', 6, NULL, '', 0.00, 0.00),
 (12, 12, 'Paid', '2025-11-12', '14:30:00', 7, NULL, '', 0.00, 0.00),
@@ -338,3 +343,12 @@ SELECT *
 FROM pets
 ORDER BY pet_id DESC
 LIMIT 5;
+
+SELECT e.event_id, e.name, e.date, e.time, e.location,
+CASE WHEN e.status = 1 THEN 'Open' ELSE 'Closed' END AS 'Status',
+COALESCE(p.name, 'No winner') AS 'Awarded Pet',
+COALESCE(a.award_name, 'No winner') AS 'Award Name'
+FROM events e
+LEFT JOIN awards a ON e.event_id = a.event_id
+LEFT JOIN pets p ON a.pet_id = p.pet_id
+ORDER BY e.event_id, a.award_id;
