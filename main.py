@@ -180,7 +180,7 @@ def setup_database():
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS awards (
                     award_id INT NOT NULL PRIMARY KEY,
-                    pet_id INT NOT NULL,
+                    pet_id INT,
                     is_special TINYINT(1) NOT NULL,
                     award_name VARCHAR(100) NOT NULL,
                     description TEXT,
@@ -310,22 +310,22 @@ def setup_database():
 
             # awards
             cursor.executemany("INSERT IGNORE INTO awards (award_id, pet_id, is_special, award_name, description, date, event_id) VALUES (%s, %s, %s, %s, %s, %s, %s)", [
-                (1, 3, 0, 'Best Costume - 1st Place', 'Pirate-themed costume, high creativity', '2025-11-21', 4),
-                (2, 19, 0, 'Best Costume - 2nd Place', 'Colorful tutu and hat', '2025-11-21', 4),
-                (3, 5, 1, 'Agility - Fastest Run', 'Completed course fastest in novice division', '2025-11-21', 2),
-                (4, 15, 1, 'Frisbee - Best Catch', 'Long-distance catch accuracy', '2025-11-23', 10),
-                (5, 1, 1, 'Fun Run - Top Veteran', 'Top among 3-5 year old category', '2025-11-21', 1),
-                (6, 16, 1, 'Fastest Fetch - Winner', 'Fastest retrieve time', '2025-11-22', 6),
-                (7, 18, 1, 'Best Talent', 'Multiple tricks performed with style', '2025-11-22', 7),
-                (8, 7, 0, 'Strongest Dog - Runner Up', 'Excellent tug strength in heavy weight class', '2025-11-22', 8),
-                (9, 22, 1, 'Parade - Most Cheerful', 'Engaged crowd with playful antics', '2025-11-23', 9),
-                (10, 12, 1, 'Photo Booth - Most Photogenic', 'Great poses and expressiveness', '2025-11-23', 11),
-                (11, 10, 1, 'Fun Run - Most Spirited', 'High energy throughout', '2025-11-21', 1),
-                (12, 21, 0, 'Strongest Dog - Champion', 'Champion of tug-of-war heavy class', '2025-11-22', 8),
-                (13, 8, 0, 'Obedience - 1st Place', 'Highest obedience score overall', '2025-11-28', 3),
-                (14, 11, 0, 'Obedience - 2nd Place', 'Very strong performance', '2025-11-28', 3),
-                (15, 6, 1, 'Look-Alike - Best Pair', 'Dog-owner duo with strongest resemblance', '2025-11-29', 5),
-                (16, 20, 1, 'Look-Alike - Most Creative', 'Unique coordinated styling', '2025-11-29', 5)
+                (1, None, 0, 'Best Costume - 1st Place', 'Pirate-themed costume, high creativity', '2025-11-21', 4),
+                (2, None, 0, 'Best Costume - 2nd Place', 'Colorful tutu and hat', '2025-11-21', 4),
+                (3, None, 1, 'Agility - Fastest Run', 'Completed course fastest in novice division', '2025-11-21', 2),
+                (4, None, 1, 'Frisbee - Best Catch', 'Long-distance catch accuracy', '2025-11-23', 10),
+                (5, None, 1, 'Fun Run - Top Veteran', 'Top among 3-5 year old category', '2025-11-21', 1),
+                (6, None, 1, 'Fastest Fetch - Winner', 'Fastest retrieve time', '2025-11-22', 6),
+                (7, None, 1, 'Best Talent', 'Multiple tricks performed with style', '2025-11-22', 7),
+                (8, None, 0, 'Strongest Dog - Runner Up', 'Excellent tug strength in heavy weight class', '2025-11-22', 8),
+                (9, None, 1, 'Parade - Most Cheerful', 'Engaged crowd with playful antics', '2025-11-23', 9),
+                (10, None, 1, 'Photo Booth - Most Photogenic', 'Great poses and expressiveness', '2025-11-23', 11),
+                (11, None, 1, 'Fun Run - Most Spirited', 'High energy throughout', '2025-11-21', 1),
+                (12, None, 0, 'Strongest Dog - Champion', 'Champion of tug-of-war heavy class', '2025-11-22', 8),
+                (13, None, 0, 'Obedience - 1st Place', 'Highest obedience score overall', '2025-11-28', 3),
+                (14, None, 0, 'Obedience - 2nd Place', 'Very strong performance', '2025-11-28', 3),
+                (15, None, 1, 'Look-Alike - Best Pair', 'Dog-owner duo with strongest resemblance', '2025-11-29', 5),
+                (16, None, 1, 'Look-Alike - Most Creative', 'Unique coordinated styling', '2025-11-29', 5)
             ])
 
             # participation_log
