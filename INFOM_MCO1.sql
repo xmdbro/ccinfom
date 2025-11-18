@@ -400,6 +400,9 @@ FROM pets
 ORDER BY pet_id DESC
 LIMIT 5;
 
+SELECT *
+FROM pet_event_entry;
+
 SELECT e.event_id, e.name, e.date, e.time, e.location,
 CASE WHEN e.status = 1 THEN 'Open' ELSE 'Closed' END AS 'Status',
 COALESCE(p.name, 'No winner') AS 'Awarded Pet',

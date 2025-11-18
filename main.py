@@ -1372,6 +1372,20 @@ class awardpetscore(QDialog):
         # Store selected pet_id and entry_id
         self.selected_pet_id = None
         self.selected_entry_id = None
+        
+        # Get label for current pet score
+        self.pet_score_label = self.findChild(QtWidgets.QLabel, "petscorelabel")
+        if self.pet_score_label:
+            self.pet_score_label.raise_()          # bring to front
+            self.pet_score_label.show()            # ensure visible
+            self.pet_score_label.setStyleSheet(
+              'color: rgb(40,52,84); background: rgba(255,255,255,180); font: 700 12pt "Berlin Sans FB Demi"; padding: 2px;'
+            )
+            
+        self.petswhoparticipated.currentIndexChanged.connect(self.update_selected_pet_score)
+        self.pastevents.currentIndexChanged.connect(self.update_selected_pet_score)
+        
+        self.update_selected_pet_score()
     
     def load_events(self):
         """Grab all events and put them in the dropdown."""
@@ -1613,7 +1627,7 @@ class awardpetscore(QDialog):
     
     def save_score_and_award(self):
         """Save score or special award for the selected pet, depending on event type."""
-        if not self.selected_entry_id or not self.selected_pet_id:
+        if self.selected_entry_id is None or self.selected_pet_id is None:
             if self.message:
                 self.message.setText('Please select an event and pet first.')
             return
@@ -1638,6 +1652,7 @@ class awardpetscore(QDialog):
             # Update pet_result in pet_event_entry
             if self.current_event_is_placement:
                 # Placement event: update score only
+                # 1) Save this pet's score
                 score = self.doubleSpinBox.value()
                 cursor.execute("""
                     UPDATE pet_event_entry
@@ -1645,52 +1660,62 @@ class awardpetscore(QDialog):
                     WHERE entry_id = %s
                 """, (score, self.selected_entry_id))
 
-                # Recompute placements for this event based on all scores
-                # 1) Get top 2 pets by score for this event
+                # 2) Recompute rankings (highest score first)
                 cursor.execute("""
                     SELECT pee.pet_id
                     FROM pet_event_entry pee
                     WHERE pee.event_id = %s
                       AND pee.pet_result IS NOT NULL
                     ORDER BY pee.pet_result DESC
-                    LIMIT 2
                 """, (event_id,))
-                winners = cursor.fetchall()
+                ranking = cursor.fetchall()
 
-                first_pet = winners[0][0] if len(winners) >= 1 else None
-                second_pet = winners[1][0] if len(winners) >= 2 else None
-
-                # 2) Update 1st place / Champion award row (is_special = 0)
-                if first_pet is not None:
+                # 3) Update 1st place / champion (top of the ranking)
+                if len(ranking) >= 1:
+                    win_pet_id = ranking[0][0]
                     cursor.execute("""
                         UPDATE awards
                         SET pet_id = %s
                         WHERE event_id = %s
                           AND is_special = 0
                           AND (
-                                award_name LIKE '%1st%'      OR
-                                award_name LIKE '%first%'    OR
+                                award_name LIKE '%1st%' OR
                                 award_name LIKE '%Champion%'
                               )
-                    """, (first_pet, event_id,))
+                    """, (win_pet_id, event_id))
 
-                # 3) Update 2nd place / Runner Up award row
-                if second_pet is not None:
+                # 4) Update 2nd place / runner‑up (second in the ranking)
+                if len(ranking) >= 2:
+                    win2_pet_id = ranking[1][0]
                     cursor.execute("""
-                        UPDATE awards
-                        SET pet_id = %s
+                        SELECT award_id
+                        FROM awards
                         WHERE event_id = %s
                           AND is_special = 0
                           AND (
-                                award_name LIKE '%2nd%'       OR
-                                award_name LIKE '%second%'    OR
+                                award_name LIKE '%2nd%' OR
                                 award_name LIKE '%Runner Up%'
-                              )
-                    """, (second_pet, event_id,))
+                            )
+                        LIMIT 1
+                    """, (event_id,))
+
+                    row = cursor.fetchone()
+
+                    if row:
+                        award_id = row[0]
+                        cursor.execute("""
+                            UPDATE awards
+                            SET pet_id = %s
+                            WHERE award_id = %s
+                        """, (win2_pet_id, award_id))
 
                 conn.commit()
                 if self.message:
-                    self.message.setText(f'Score {score:.2f} saved and placements updated based on current rankings.')
+                    self.message.setText(
+                        f'Score {score:.2f} saved and placements updated based on current rankings.'
+                    )
+                if self.pet_score_label:
+                    self.pet_score_label.setText(f"Pet score: {score:.2f}")
             else:
                 # Special event: award only, no score
                 award_name = self.awards.currentText()
@@ -1729,7 +1754,10 @@ class awardpetscore(QDialog):
                 conn.commit()
                 if self.message:
                     self.message.setText(f'Award \"{award_name}\" saved successfully for this pet.')
-
+                    
+                if self.pet_score_label:
+                    self.pet_score_label.setText(f"Pet score: N/A")
+                    
             # refresh table and reset selection
             self.load_event_data(event_id)
             self.petswhoparticipated.setCurrentIndex(0)
@@ -1737,7 +1765,7 @@ class awardpetscore(QDialog):
             self.doubleSpinBox.setValue(0.00)
             self.selected_pet_id = None
             self.selected_entry_id = None
-
+                
         except Error as err:
             print(f"Error saving score/award: {err}")
             if conn:
@@ -1747,6 +1775,55 @@ class awardpetscore(QDialog):
         finally:
             if conn:
                 conn.close()
+                
+    def update_selected_pet_score(self):
+        ev_text = self.pastevents.currentText()
+        pt_text = self.petswhoparticipated.currentText()
+
+        # Guard: nothing selected yet
+        if ev_text == "Select Event" or pt_text in ("", "Select Pet"):
+            self.doubleSpinBox.setValue(0.0)
+            if self.pet_score_label:
+                self.pet_score_label.setText("Pet score: 0.00")
+            return
+
+        # Extract IDs from "Name (ID: N)"
+        try:
+            event_id = int(ev_text.split("(ID: ")[1].split(")")[0])
+            pet_id   = int(pt_text.split("(ID: ")[1].split(")")[0])
+        except Exception:
+            self.doubleSpinBox.setValue(0.0)
+            if self.pet_score_label:
+                self.pet_score_label.setText("Pet score: 0.00")
+            return
+
+        # Look up the score and display it
+        conn = get_db_connection()
+        if not conn:
+            if self.pet_score_label:
+                self.pet_score_label.setText("Pet score: (DB error)")
+            return
+
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT pet_result
+                FROM pet_event_entry
+                WHERE event_id = %s AND pet_id = %s
+                LIMIT 1
+            """, (event_id, pet_id))
+            row = cur.fetchone()
+            score = float(row[0]) if row and row[0] is not None else 0.0
+
+            self.doubleSpinBox.setValue(score)
+            if self.pet_score_label:
+                self.pet_score_label.setText(f"Pet score: {score:.2f}")
+        except Error as err:
+            print("load score error:", err)
+            if self.pet_score_label:
+                self.pet_score_label.setText("Pet score: (error)")
+        finally:
+            conn.close()
 
     def gotoadminmenu(self):
         admmn = adminmenu()

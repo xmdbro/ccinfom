@@ -44,6 +44,22 @@
     <bool>false</bool>
    </property>
   </widget>
+   <widget class="QLabel" name="petscorelabel">
+   <property name="geometry">
+    <rect>
+     <x>700</x>
+     <y>580</y>
+     <width>200</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Pet score: 0.00</string>
+   </property>
+   <property name="alignment">
+    <set>Qt::AlignLeft|Qt::AlignVCenter</set>
+   </property>
+  </widget>
   <widget class="QWidget" name="widget" native="true">
    <property name="geometry">
     <rect>
