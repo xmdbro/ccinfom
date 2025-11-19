@@ -1455,12 +1455,48 @@ class participantlog(QDialog):
         super(participantlog, self).__init__()
         loadUi('./gui/participantlog.ui', self)
         self.exitbutt.clicked.connect(self.gotoadminmenu)
+
+        # Connect filters to the load function
+        self.filter_event.currentIndexChanged.connect(self.load_participation_log)
+        self.filter_action.currentIndexChanged.connect(self.load_participation_log)
+
         self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes')
-        self.editerrormess = self.findChild(QtWidgets.QLabel, 'editerrormess')
         
-        # Load participation log data
+        # Load filters and initial data
+        self.load_filter_options()
         self.load_participation_log()
     
+    def load_filter_options(self):
+        """Populate the Event and Action Type dropdowns."""
+        conn = get_db_connection()
+        if not conn:
+            return
+            
+        try:
+            cursor = conn.cursor()
+            
+            # Load Events
+            self.filter_event.clear()
+            self.filter_event.addItem("All Events")
+            
+            cursor.execute("SELECT event_id, name FROM events ORDER BY date DESC")
+            for event_id, name in cursor.fetchall():
+                self.filter_event.addItem(f"{name} (ID: {event_id})")
+                
+            # Load Action Types
+            self.filter_action.clear()
+            self.filter_action.addItem("All Actions")
+            self.filter_action.addItem("Paid")          # Standard Registration
+            self.filter_action.addItem("Cancelled")     # Withdrawal
+            self.filter_action.addItem("Transferred")   # Event Transfer
+            self.filter_action.addItem("Modified")      # Info Updates
+            self.filter_action.addItem("Other")         # Catch-all for everything else
+            
+        except Error as err:
+            print(f"Error loading filters: {err}")
+        finally:
+            conn.close()
+
     def load_participation_log(self):
         """Pull all participation log stuff and show names instead of those boring IDs."""
         conn = get_db_connection()
@@ -1472,8 +1508,8 @@ class participantlog(QDialog):
         try:
             cursor = conn.cursor()
             
-            # Grab all the log entries but swap out IDs for actual names
-            cursor.execute("""
+            # Base query: Grab all the log entries but swap out IDs for actual names
+            query = """
                 SELECT pl.log_id, 
                        CONCAT(o.first_name, ' ', o.last_name) as owner_name,
                        pl.action_type, 
@@ -1489,9 +1525,38 @@ class participantlog(QDialog):
                 LEFT JOIN owners o ON er.owner_id = o.owner_id
                 LEFT JOIN events e_orig ON pl.original_event_id = e_orig.event_id
                 LEFT JOIN events e_new ON pl.new_event_id = e_new.event_id
-                ORDER BY pl.action_date DESC, pl.action_time DESC
-            """)
+                WHERE 1=1
+            """
+
+            params = []
+
+            # Apply Event Filter
+            event_text = self.filter_event.currentText()
+            if event_text and event_text != "All Events":
+                try:
+                    # Extract ID from "Event Name (ID: 5)"
+                    event_id = int(event_text.split('(ID: ')[1].split(')')[0])
+                    query += " AND (pl.original_event_id = %s OR pl.new_event_id = %s)"
+                    params.extend([event_id, event_id])
+                except:
+                    pass
+
+            # Apply Action Type Filter
+            action_text = self.filter_action.currentText()
             
+            if action_text == "Other":
+                # Filter for anything NOT in the main categories
+                query += " AND pl.action_type NOT IN ('Paid', 'Cancelled', 'Transferred', 'Modified')"
+                
+            elif action_text and action_text != "All Actions":
+                # Standard exact match
+                query += " AND pl.action_type = %s"
+                params.append(action_text)
+            
+            # Final ordering
+            query += " ORDER BY pl.action_date DESC, pl.action_time DESC"
+            
+            cursor.execute(query, tuple(params))
             logs = cursor.fetchall()
             
             # Set up table
@@ -1502,42 +1567,40 @@ class participantlog(QDialog):
                 'Original Event', 'New Event', 'Reason', 'Refund Amount', 'Top Up Amount'
             ])
             
-            # Populate table
+            # Set up table
+            self.participantlog.setRowCount(len(logs))
+            self.participantlog.setColumnCount(10)
+            self.participantlog.setHorizontalHeaderLabels([
+                'Log ID', 'Owner Name', 'Action Type', 'Action Date', 'Action Time',
+                'Original Event', 'New Event', 'Reason', 'Refund Amount', 'Top Up Amount'
+            ])
+            
             for row, log in enumerate(logs):
                 for col, value in enumerate(log):
                     if value is None:
                         display_value = 'N/A'
                     elif isinstance(value, (int, float)):
-                        if col == 8 or col == 9:  # refund_amount or top_up_amount
-                            display_value = f"₱{float(value):.2f}" if value else '₱0.00'
+                        if col == 8 or col == 9:  # refund or top_up
+                             display_value = f"₱{float(value):.2f}"
                         else:
                             display_value = str(value)
                     else:
                         display_value = str(value)
                     
                     item = QtWidgets.QTableWidgetItem(display_value)
-                    # Let text wrap so we can see everything without it getting cut off
-                    if col in [1, 2, 5, 6, 7]:  # Owner Name, Action Type, Original Event, New Event, Reason
+                    if col in [1, 2, 5, 6, 7]:
                         item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
                     self.participantlog.setItem(row, col, item)
-            
-            # Turn on word wrap so long text doesn't get chopped
+                    
             self.participantlog.setWordWrap(True)
-            
-            # Use stretch mode to fill the widget initially, still allows manual resizing
+            # Resize columns to contents
+            self.participantlog.resizeColumnsToContents()
+            # Force the header to stretch to fill the available width
             header = self.participantlog.horizontalHeader()
-            if header:
-                header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
-            vheader = self.participantlog.verticalHeader()
-            if vheader:
-                vheader.setVisible(False)
-                # Make rows taller so wrapped text fits nicely
-                vheader.setDefaultSectionSize(40)
-            
+            header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
+
         except Error as err:
-            print(f"Error loading participation log: {err}")
-            if self.owerrormes:
-                self.owerrormes.setText('Error loading participation log.')
+            print(f"Error loading logs: {err}")
         finally:
             if conn:
                 conn.close()
