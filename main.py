@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QDialog, QApplication, QWidget, QStackedWidget
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'mkaybye2112.',
+    'password': 'Dlsu1234!',
     'database': 'pet_show'
 }
 
@@ -3390,6 +3390,12 @@ class editpetscreen(QDialog):
         # Set up combo boxes
         self.petsex.addItems(['Male', 'Female', 'Unknown'])
         self.petsize.addItems(['Small', 'Medium', 'Large', 'Extra Large'])
+
+        # Load breeds into combo box
+        self.load_breeds()
+
+        # Connect breed combo box to handle "Other" option
+        self.petbreed.currentIndexChanged.connect(self.on_breed_selected)
         
         # Connect buttons
         self.petexitbutt.clicked.connect(self.gotoeditinf)
@@ -3428,6 +3434,43 @@ class editpetscreen(QDialog):
         else:
             self.muzzleyes.setStyleSheet(off)
             self.muzzleno.setStyleSheet(off)
+    
+
+    def load_breeds(self):
+        """Grab all breeds from the database and add them to the combo box, plus "Other" option."""
+        conn = get_db_connection()
+        if not conn:
+            return
+        
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT DISTINCT breed_name 
+                FROM breeds 
+                ORDER BY breed_name
+            """)
+            
+            breeds = cursor.fetchall()
+            self.petbreed.clear()
+            
+            # Add all breeds
+            for breed in breeds:
+                if breed[0]:
+                    self.petbreed.addItem(breed[0])
+            
+            # Add "Other" option at the end
+            self.petbreed.addItem("Other")
+        except Error as err:
+            print(f"Error loading breeds: {err}")
+        finally:
+            if conn:
+                conn.close()
+    
+    def on_breed_selected(self):
+        """Handle when breed selection changes - if "Other" is selected, clear the text so user can type."""
+        if self.petbreed.currentText() == "Other":
+            # Clear the text so user can type their custom breed
+            self.petbreed.setEditText("") 
         
     def loadpetdata(self):
         """Load this pet's current info into the form so we can tweak it."""
@@ -3473,7 +3516,7 @@ class editpetscreen(QDialog):
                     
                     self.petnotes.setPlainText(pet_data[6] or '')
                     
-                    # Now grab the first breed we find (if any)
+                    # Now grab the breed and set it in the combo box
                     cursor.execute("""
                         SELECT b.breed_name 
                         FROM breeds b
@@ -3484,7 +3527,9 @@ class editpetscreen(QDialog):
                     
                     breed_result = cursor.fetchone()
                     if breed_result:
-                        self.petbreed.setText(breed_result[0] or '')
+                        breed_name = breed_result[0] or ''
+                        # Set the combo box text to the breed name
+                        self.petbreed.setCurrentText(breed_name)
                     
                     # Show the owner name at the top
                     cursor.execute("""
@@ -3514,11 +3559,16 @@ class editpetscreen(QDialog):
         petsex = self.petsex.currentText().strip()
         petweight = self.petweight.value()
         petsize_name = self.petsize.currentText().strip()
-        petbreed = self.petbreed.text().strip()
+        petbreed = self.petbreed.currentText().strip()
         petnotes = self.petnotes.toPlainText().strip()
         
         self.petregiserr.setText('')
         
+        # Handle "Other" logic
+        if petbreed == "Other" or (petbreed == "" and self.petbreed.currentIndex() == self.petbreed.count() - 1):
+            self.petregiserr.setText('Please enter a custom breed name.')
+            return
+
         # Quick sanity check on required fields
         if not petname or petage == 0 or not petbreed:
             self.petregiserr.setText('Please fill in Pet Name, Age (must be > 0), and Breed.')
