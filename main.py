@@ -1618,6 +1618,7 @@ class awardpetscore(QDialog):
         """Load awards for this event into dropdown, only special awards."""
         self.awards.clear()
         self.awards.addItem("Select Award")
+        self.awards.addItem("Remove Award for this Pet")
 
         conn = get_db_connection()
         if not conn:
@@ -1922,6 +1923,22 @@ class awardpetscore(QDialog):
                 if award_name == "Select Award":
                     if self.message:
                         self.message.setText('Please select an award type for this special event.')
+                    return
+                
+                # Special event: Remove Award
+                if award_name == "Remove Award for this Pet":
+                    cursor.execute("""
+                        UPDATE awards
+                        SET pet_id = NULL
+                        WHERE event_id = %s
+                          AND is_special = 1
+                          AND pet_id = %s
+                    """, (event_id, self.selected_pet_id))
+                    conn.commit()
+                    if self.message:
+                        self.message.setText(f'Award removed successfully for this pet.')
+                    if self.pet_score_label:
+                        self.pet_score_label.setText(f"Pet score: N/A")
                     return
 
                 from datetime import datetime
@@ -2257,7 +2274,35 @@ class petregistration(QDialog):
         self.petregiserr = self.findChild(QtWidgets.QLabel, 'petregiserr')
         self.owner_context = owner_context or get_active_owner()
         self.owner_id = self.owner_context['owner_id'] if self.owner_context else None
-    
+        
+        # Highlight muzzle choice
+        self.muzzleyes  = self.findChild(QtWidgets.QRadioButton, 'muzzleyes')
+        self.muzzleno   = self.findChild(QtWidgets.QRadioButton, 'muzzleno')
+        self.muzzleyes.toggled.connect(self._update_muzzle_highlight)
+        self.muzzleno.toggled.connect(self._update_muzzle_highlight)
+        self._update_muzzle_highlight()
+        
+        if self.muzzleyes and self.muzzleno:
+            self.muzzleyes.toggled.connect(self._update_muzzle_highlight)
+            self.muzzleno.toggled.connect(self._update_muzzle_highlight)
+            self._update_muzzle_highlight()
+            
+    def _update_muzzle_highlight(self):
+        off = ("QRadioButton { color: rgb(40,52,84); background: transparent; "
+               "font: 700 10pt 'Berlin Sans FB Demi'; padding: 2px 6px; border-radius: 6px; }")
+        on  = ("QRadioButton { color: white; background: rgb(251,176,59); "
+               "font: 700 10pt 'Berlin Sans FB Demi'; padding: 2px 6px; border-radius: 6px; }")
+
+        if self.muzzleyes.isChecked():
+            self.muzzleyes.setStyleSheet(on)
+            self.muzzleno.setStyleSheet(off)
+        elif self.muzzleno.isChecked():
+            self.muzzleyes.setStyleSheet(off)
+            self.muzzleno.setStyleSheet(on)
+        else:
+            self.muzzleyes.setStyleSheet(off)
+            self.muzzleno.setStyleSheet(off)
+
     def load_breeds(self):
         """Grab all breeds from the database and add them to the combo box, plus "Other" option."""
         conn = get_db_connection()
@@ -3355,6 +3400,34 @@ class editpetscreen(QDialog):
         
         # Load pet data
         self.loadpetdata()
+        
+        # Highlight muzzle choice
+        self.muzzleyes  = self.findChild(QtWidgets.QRadioButton, 'muzzleyes')
+        self.muzzleno   = self.findChild(QtWidgets.QRadioButton, 'muzzleno')
+        self.muzzleyes.toggled.connect(self.update_muzzle_highlight_edit)
+        self.muzzleno.toggled.connect(self.update_muzzle_highlight_edit)
+        self.update_muzzle_highlight_edit()
+        
+        if self.muzzleyes and self.muzzleno:
+            self.muzzleyes.toggled.connect(self.update_muzzle_highlight_edit)
+            self.muzzleno.toggled.connect(self.update_muzzle_highlight_edit)
+            self.update_muzzle_highlight_edit()
+            
+    def update_muzzle_highlight_edit(self):
+        off = ("QRadioButton { color: rgb(40,52,84); background: transparent; "
+               "font: 700 10pt 'Berlin Sans FB Demi'; padding: 2px 6px; border-radius: 6px; }")
+        on  = ("QRadioButton { color: white; background: rgb(251,176,59); "
+               "font: 700 10pt 'Berlin Sans FB Demi'; padding: 2px 6px; border-radius: 6px; }")
+
+        if self.muzzleyes.isChecked():
+            self.muzzleyes.setStyleSheet(on)
+            self.muzzleno.setStyleSheet(off)
+        elif self.muzzleno.isChecked():
+            self.muzzleyes.setStyleSheet(off)
+            self.muzzleno.setStyleSheet(on)
+        else:
+            self.muzzleyes.setStyleSheet(off)
+            self.muzzleno.setStyleSheet(off)
         
     def loadpetdata(self):
         """Load this pet's current info into the form so we can tweak it."""
