@@ -73,11 +73,10 @@ font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
 QWidget#withexit:hover {
-    
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
-    padding: 10px 20px; 
-    font-size: 15px; 
+    padding: 10px 20px;
+font-size: 15px; 
 }</string>
    </property>
    <property name="text">
@@ -103,11 +102,10 @@ font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
 QWidget#withdrawbutt:hover {
-    
     background-color:rgb(238, 223, 146); 
     border: 2px solid #388E3C; 
-    padding: 10px 20px; 
-    font-size: 15px; 
+    padding: 10px 20px;
+font-size: 15px; 
 }</string>
    </property>
    <property name="text">
@@ -135,7 +133,7 @@ QWidget#withdrawbutt:hover {
     <enum>Qt::LeftToRight</enum>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;;
 color: rgb(40, 52, 84);</string>
    </property>
    <property name="text">
@@ -152,7 +150,7 @@ color: rgb(40, 52, 84);</string>
     </rect>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;;
 color: rgb(40, 52, 84);
 background-color: rgb(255, 255, 255);</string>
    </property>
@@ -178,7 +176,7 @@ background-color: rgb(255, 255, 255);</string>
     <enum>Qt::LeftToRight</enum>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;;
 color: rgb(251, 176, 59);</string>
    </property>
    <property name="text">
@@ -198,31 +196,33 @@ color: rgb(251, 176, 59);</string>
     </rect>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 8pt &quot;Berlin Sans FB Demi&quot;; 
+    <string notr="true">font: 700 8pt &quot;Berlin Sans FB Demi&quot;;
 color: rgb(40, 52, 84);
 background-color: rgb(255, 255, 255);</string>
    </property>
   </widget>
+  
   <widget class="QListWidget" name="petandowner">
    <property name="geometry">
     <rect>
      <x>770</x>
-     <y>280</y>
+     <y>310</y>
      <width>321</width>
-     <height>101</height>
+     <height>91</height>
     </rect>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;;
 color: rgb(40, 52, 84);
 background-color: rgb(255, 255, 255);</string>
    </property>
   </widget>
+
   <widget class="QLabel" name="warningwithdrawal">
    <property name="geometry">
     <rect>
      <x>380</x>
-     <y>390</y>
+     <y>400</y>
      <width>521</width>
      <height>20</height>
     </rect>
@@ -239,7 +239,7 @@ background-color: rgb(255, 255, 255);</string>
     <enum>Qt::LeftToRight</enum>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;;
 color: rgb(248, 174, 58);</string>
    </property>
    <property name="text">
@@ -248,13 +248,17 @@ color: rgb(248, 174, 58);</string>
    <property name="alignment">
     <set>Qt::AlignCenter</set>
    </property>
+   <property name="wordWrap">
+    <bool>true</bool>
+   </property>
   </widget>
+
   <widget class="QLabel" name="label_2">
    <property name="geometry">
     <rect>
-     <x>200</x>
+     <x>180</x>
      <y>310</y>
-     <width>91</width>
+     <width>120</width>
      <height>20</height>
     </rect>
    </property>
@@ -267,7 +271,7 @@ color: rgb(248, 174, 58);</string>
     </font>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;; 
+    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;;
 color: rgb(40, 52, 84);
 background-color: rgb(255, 255, 255);</string>
    </property>
@@ -293,7 +297,7 @@ background-color: rgb(255, 255, 255);</string>
     </font>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;; 
+    <string notr="true">font: 700 12pt &quot;Berlin Sans FB Demi&quot;;
 color: rgb(40, 52, 84);
 background-color: rgb(255, 255, 255);</string>
    </property>
@@ -301,12 +305,13 @@ background-color: rgb(255, 255, 255);</string>
     <string>Summary:</string>
    </property>
   </widget>
+  
   <widget class="QLabel" name="label_5">
    <property name="geometry">
     <rect>
      <x>770</x>
      <y>260</y>
-     <width>211</width>
+     <width>300</width>
      <height>20</height>
     </rect>
    </property>

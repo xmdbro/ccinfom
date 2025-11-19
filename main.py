@@ -3862,6 +3862,20 @@ class yourstatuss(QDialog):
         super(yourstatuss, self).__init__()
         loadUi('./gui/status.ui', self)
         self.exitbutt.clicked.connect(self.gotommenu)
+
+        self.transferbutt = self.findChild(QtWidgets.QPushButton, 'transferbutt')
+        self.withdrawbutt = self.findChild(QtWidgets.QPushButton, 'withdrawbutt')
+
+        if self.transferbutt:
+            self.transferbutt.clicked.connect(self.gototransfer)
+        else:
+            print("Error: transferbutt not found in status.ui")
+            
+        if self.withdrawbutt:
+            self.withdrawbutt.clicked.connect(self.gotowithdraw)
+        else:
+            print("Error: withdrawbutt not found in status.ui")
+
         self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes')
         self.editerrormess = self.findChild(QtWidgets.QLabel, 'editerrormess')
         self.status_table = self.findChild(QtWidgets.QTableWidget, 'yourstatus')
@@ -3988,6 +4002,18 @@ class yourstatuss(QDialog):
         widget.addWidget(mmenu)
         widget.setCurrentIndex(widget.currentIndex() + 1)
 
+    def gotowithdraw(self):
+        """Go to withdraw screen (default view)."""
+        withd = withdraw()
+        widget.addWidget(withd)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+    
+    def gototransfer(self):
+        """Go to transfer screen (default view)."""
+        trnsfr = transfer()
+        widget.addWidget(trnsfr)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
 # --------------------------------------------------------------------------------------------------------------------
 
 class entries(QDialog):
@@ -3995,8 +4021,6 @@ class entries(QDialog):
         super(entries, self).__init__()
         loadUi('./gui/entries.ui', self)
         self.entriestexitbutt.clicked.connect(self.gotommenu)
-        self.transferbutt.clicked.connect(self.gototransfer)
-        self.withdrawbutt.clicked.connect(self.gotowithdraw)
         
         # Quick handles for labels we might update
         self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes')
@@ -4115,28 +4139,6 @@ class entries(QDialog):
         widget.addWidget(mmenu)
         widget.setCurrentIndex(widget.currentIndex() + 1)
 
-    def gotowithdraw(self):
-        """Navigate to withdraw screen, passing selected event info if available."""
-        selected_text = self.vieweventsel.currentText()
-        if selected_text and selected_text in self.event_dict:
-            event_id = self.event_dict[selected_text]['event_id']
-            withd = withdraw(event_id)
-        else:
-            withd = withdraw()
-        widget.addWidget(withd)
-        widget.setCurrentIndex(widget.currentIndex() + 1)
-    
-    def gototransfer(self):
-        """Navigate to transfer screen, passing selected event info if available."""
-        selected_text = self.vieweventsel.currentText()
-        if selected_text and selected_text in self.event_dict:
-            event_id = self.event_dict[selected_text]['event_id']
-            trnsfr = transfer(event_id)
-        else:
-            trnsfr = transfer()
-        widget.addWidget(trnsfr)
-        widget.setCurrentIndex(widget.currentIndex() + 1)
-
 # --------------------------------------------------------------------------------------------------------------------
 
 
@@ -4144,7 +4146,7 @@ class transfer(QDialog):
     def __init__(self, preselected_event_id=None, owner_context=None):
         super(transfer, self).__init__()
         loadUi('./gui/transfer.ui', self)
-        self.transexit.clicked.connect(self.gotoentries)
+        self.transexit.clicked.connect(self.gotostatus)
         self.tranferconbuut.clicked.connect(self.process_transfer)
         
         # Grab some handy labels so we can show messages
@@ -4208,7 +4210,10 @@ class transfer(QDialog):
                            e.base_registration_fee, e.extra_pet_discount
                     FROM event_registration er
                     JOIN events e ON er.event_id = e.event_id
-                    WHERE er.owner_id = %s AND er.status = 'Paid'
+                    JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
+                    WHERE er.owner_id = %s 
+                      AND er.status = 'Paid'
+                      AND pee.attendance_status = 'Registered'
                     ORDER BY e.date, e.time
                 """, (self.current_owner_id,))
                 
@@ -4233,15 +4238,12 @@ class transfer(QDialog):
                         'extra_pet_discount': reg[6]
                     }
                 
-                # If there's only one option, just auto-select it for convenience
+                # Auto-select logic
                 if len(registrations) == 1:
-                    # Always select the first (and only) item
                     index = 0
-                    # Use QTimer to ensure combo box is fully populated before selection
                     from PyQt6.QtCore import QTimer
                     QTimer.singleShot(0, lambda: self._select_event_from(index))
                 elif preselected_event_id:
-                    # If we came here from Entries with a specific event, pick that one
                     for text, data in self.event_from_dict.items():
                         if data['event_id'] == preselected_event_id:
                             index = self.eventfrom.findText(text)
@@ -4763,9 +4765,10 @@ class transfer(QDialog):
         else:
             self.petregiserr.setText('Database connection failed.')
 
-    def gotoentries(self):
-        entrs = entries()
-        widget.addWidget(entrs)
+    def gotostatus(self):
+        """Navigate back to the status screen."""
+        stat = yourstatuss(self.owner_context)
+        widget.addWidget(stat)
         widget.setCurrentIndex(widget.currentIndex() + 1)
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -4774,107 +4777,104 @@ class withdraw(QDialog):
     def __init__(self, preselected_event_id=None, owner_context=None):
         super(withdraw, self).__init__()
         loadUi('./gui/withdraw.ui', self)
-        self.withexit.clicked.connect(self.gotoentries)
+        
+        # Connect buttons
+        self.withexit.clicked.connect(self.gotostatus)
         self.withdrawbutt.clicked.connect(self.process_withdrawal)
         
-        # Get UI components
+        # Find UI components
         self.petregiserr = self.findChild(QtWidgets.QLabel, 'petregiserr')
         self.warningwithdrawal = self.findChild(QtWidgets.QLabel, 'warningwithdrawal')
         self.owerusername = self.findChild(QtWidgets.QLabel, 'owerusername')
         self.currententry = self.findChild(QtWidgets.QListWidget, 'currententry')
+        self.petandowner = self.findChild(QtWidgets.QListWidget, 'petandowner')
         
-        # Store data
+        # Initialize data
         self.owner_context = owner_context or get_active_owner()
         self.current_owner_id = self.owner_context['owner_id'] if self.owner_context else None
         self.selected_registration_id = None
         self.selected_pet_ids = []
         self.event_from_dict = {}
         
-        # Connect combo box signals
+        # Connect combo box signal
         self.withdrawfrom.currentIndexChanged.connect(self.on_event_from_selected)
         
-        # Load data
+        # Load initial data
         self.load_owner_data()
         self.load_enrolled_events(preselected_event_id)
-    
+
+    def gotostatus(self):
+        """Navigate back to the status screen."""
+        stat = yourstatuss(self.owner_context)
+        widget.addWidget(stat)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
     def load_owner_data(self):
-        """Grab the active owner and show their name on top."""
+        """Display the active owner's name."""
         if self.current_owner_id is None:
-            self.owerusername.setText('Please log in as an owner first.')
+            self.owerusername.setText('Please log in.')
             return
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
-                cursor.execute("""
-                    SELECT first_name, last_name 
-                    FROM owners 
-                    WHERE owner_id = %s
-                """, (self.current_owner_id,))
-                
-                owner_data = cursor.fetchone()
-                if owner_data:
-                    owner_name = f"{owner_data[0]} {owner_data[1]}"
-                    self.owerusername.setText(owner_name)
+                cursor.execute("SELECT first_name, last_name FROM owners WHERE owner_id = %s", (self.current_owner_id,))
+                row = cursor.fetchone()
+                if row:
+                    self.owerusername.setText(f"{row[0]} {row[1]}")
             except Error as err:
-                print(f"Error loading owner data: {err}")
+                print(f"Error loading owner: {err}")
             finally:
-                if conn:
-                    conn.close()
-    
+                conn.close()
+
     def load_enrolled_events(self, preselected_event_id=None):
-        """List events this owner is currently signed up (and paid) for."""
-        if self.current_owner_id is None:
+        """Load events where the owner is Paid and pets are 'Registered'."""
+        if not self.current_owner_id:
             return
-        
+            
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
+                # Join with pet_event_entry to ensure we only show active registrations
                 cursor.execute("""
-                    SELECT DISTINCT er.registration_id, er.event_id, e.name, e.date, e.time,
-                           e.base_registration_fee, e.extra_pet_discount
+                    SELECT DISTINCT er.registration_id, er.event_id, e.name, e.date, e.time, e.base_registration_fee
                     FROM event_registration er
                     JOIN events e ON er.event_id = e.event_id
-                    WHERE er.owner_id = %s AND er.status = 'Paid'
+                    JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
+                    WHERE er.owner_id = %s 
+                      AND er.status = 'Paid' 
+                      AND pee.attendance_status = 'Registered'
                     ORDER BY e.date, e.time
                 """, (self.current_owner_id,))
                 
-                registrations = cursor.fetchall()
+                regs = cursor.fetchall()
                 self.withdrawfrom.clear()
                 self.event_from_dict = {}
                 
-                for reg in registrations:
-                    reg_id = reg[0]
-                    event_id = reg[1]
-                    event_name = reg[2] or 'Event'
-                    event_date = to_python_date(reg[3])
-                    event_time = str(reg[4]) if reg[4] not in (None, '') else ''
-                    event_date_text = format_date_string(event_date if event_date else reg[3])
-                    base_fee = float(reg[5]) if reg[5] is not None else 0.0
-                    extra_discount = float(reg[6]) if reg[6] is not None else 0.0
-                    display_text = f"{event_name} (Reg #{reg_id})"
+                for r in regs:
+                    reg_id = r[0]
+                    event_id = r[1]
+                    name = r[2]
+                    date_val = r[3]
+                    base_fee = r[5]
+                    
+                    display_text = f"{name} (Reg #{reg_id})"
                     self.withdrawfrom.addItem(display_text)
                     self.event_from_dict[display_text] = {
                         'registration_id': reg_id,
                         'event_id': event_id,
-                        'name': event_name,
-                        'date': event_date,
-                        'date_text': event_date_text,
-                        'time': event_time,
-                        'base_fee': base_fee,
-                        'extra_pet_discount': extra_discount
+                        'name': name,
+                        'date': date_val,
+                        'base_fee': base_fee
                     }
                 
-                # If there’s only one choice, just auto-pick it for the user
-                if len(registrations) == 1:
-                    # Always select the first (and only) item
+                # Auto-select if only one event or if preselected
+                if len(regs) == 1:
                     index = 0
-                    # Use QTimer to ensure combo box is fully populated before selection
                     from PyQt6.QtCore import QTimer
                     QTimer.singleShot(0, lambda: self._select_withdraw_from(index))
                 elif preselected_event_id:
-                    # If Entries passed in an event, try to highlight that one
                     for text, data in self.event_from_dict.items():
                         if data['event_id'] == preselected_event_id:
                             index = self.withdrawfrom.findText(text)
@@ -4882,61 +4882,53 @@ class withdraw(QDialog):
                                 from PyQt6.QtCore import QTimer
                                 QTimer.singleShot(0, lambda idx=index: self._select_withdraw_from(idx))
                             break
-                
+                            
             except Error as err:
                 print(f"Error loading enrolled events: {err}")
                 if self.petregiserr:
-                    self.petregiserr.setText('Error loading enrolled events.')
+                    self.petregiserr.setText('Error loading events.')
             finally:
-                if conn:
-                    conn.close()
-    
+                conn.close()
+
     def _select_withdraw_from(self, index):
-        """Helper to safely set the index and run the handler once."""
+        """Helper to set combo box index without triggering double signals."""
         if index >= 0 and index < self.withdrawfrom.count():
-            # Disconnect so we don't trigger twice while we change the index
             try:
                 self.withdrawfrom.currentIndexChanged.disconnect()
             except:
-                pass  # Signal might not be connected yet
-            
+                pass
             self.withdrawfrom.setCurrentIndex(index)
-            
-            # Put the connection back
             self.withdrawfrom.currentIndexChanged.connect(self.on_event_from_selected)
-            
-            # And then manually refresh the UI
             self.on_event_from_selected()
-    
+
     def on_event_from_selected(self):
-        """When the event changes, reload the pets and the summary."""
-        selected_text = self.withdrawfrom.currentText()
-        if not selected_text or selected_text not in self.event_from_dict:
+        """Handle event selection change."""
+        txt = self.withdrawfrom.currentText()
+        if not txt or txt not in self.event_from_dict:
             self.currententry.clear()
+            self.petandowner.clear()
             self.warningwithdrawal.setText('')
             return
         
-        event_data = self.event_from_dict[selected_text]
-        self.selected_registration_id = event_data['registration_id']
+        data = self.event_from_dict[txt]
+        self.selected_registration_id = data['registration_id']
         
-        # Keep track of which pets are tied to this registration
+        # Load details
         self.load_pets_and_owners()
-        
-        # Show the breakdown, including any possible refund
-        self.display_current_entry_with_refund(event_data)
-    
+        self.display_current_entry_with_refund(data)
+
     def load_pets_and_owners(self):
-        """Record which pets go with the current registration."""
+        """Populate the list widget with Owner and Pet names for this registration."""
         if not self.selected_registration_id:
-            self.currententry.clear()
+            self.petandowner.clear()
             return
-        
+            
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
                 cursor.execute("""
-                    SELECT DISTINCT o.first_name, o.last_name, p.name as pet_name, p.pet_id
+                    SELECT DISTINCT o.first_name, o.last_name, p.name, p.pet_id
                     FROM event_registration er
                     JOIN owners o ON er.owner_id = o.owner_id
                     JOIN pet_event_entry pee ON er.registration_id = pee.registration_id
@@ -4946,73 +4938,68 @@ class withdraw(QDialog):
                 """, (self.selected_registration_id,))
                 
                 results = cursor.fetchall()
+                self.petandowner.clear()
                 self.selected_pet_ids = []
                 
                 if results:
-                    for owner_first, owner_last, pet_name, pet_id in results:
+                    # Add Owner Name once
+                    owner_first = results[0][0]
+                    owner_last = results[0][1]
+                    self.petandowner.addItem(f"Owner: {owner_first} {owner_last}")
+                    self.petandowner.addItem("") # Spacer
+                    
+                    # Add Pets
+                    for r in results:
+                        pet_name = r[2]
+                        pet_id = r[3]
+                        self.petandowner.addItem(f"Pet: {pet_name}")
                         self.selected_pet_ids.append(pet_id)
-                
+                else:
+                    self.petandowner.addItem("No pets found.")
+                    
             except Error as err:
-                print(f"Error loading pets and owners: {err}")
+                print(f"Error loading pets: {err}")
             finally:
-                if conn:
-                    conn.close()
-    
+                conn.close()
+
     def calculate_refund(self, event_date, amount_paid):
-        """Roughly figure out how much can be refunded based on how close the event is."""
-        from datetime import datetime, date
+        """Calculate refund amount based on days until event."""
+        from datetime import date
         
-        # Parse event date
         event_dt = to_python_date(event_date)
         if not event_dt:
             event_dt = date.today()
-        
-        # Get today's date
+            
         today = date.today()
-        
-        # Calculate days until event
         days_until = (event_dt - today).days
         
-        # Calculate refund based on policy
         if days_until >= 14:
-            # 14+ days: 100% refund
-            refund_percentage = 1.0
-            refund_amount = amount_paid
-            refund_text = "100% refund (14+ days before event)"
+            return {
+                'days_until': days_until,
+                'refund_amount': amount_paid,
+                'refund_text': "100% refund (14+ days before)"
+            }
         elif days_until >= 4:
-            # 13-4 days: 50% refund
-            refund_percentage = 0.5
-            refund_amount = amount_paid * 0.5
-            refund_text = f"50% refund ({days_until} days before event)"
+            return {
+                'days_until': days_until,
+                'refund_amount': amount_paid * 0.5,
+                'refund_text': f"50% refund ({days_until} days before)"
+            }
         else:
-            # 3 days or less: 0% refund
-            refund_percentage = 0.0
-            refund_amount = 0.0
-            refund_text = f"0% refund ({days_until} days before event - less than 4 days)"
-        
-        return {
-            'days_until': days_until,
-            'refund_percentage': refund_percentage,
-            'refund_amount': refund_amount,
-            'refund_text': refund_text
-        }
-    
-    def display_current_entry_with_refund(self, event_data):
-        """Show the current event details plus a quick refund breakdown."""
+            return {
+                'days_until': days_until,
+                'refund_amount': 0.0,
+                'refund_text': f"0% refund ({days_until} days before)"
+            }
+
+    def display_current_entry_with_refund(self, data):
+        """Show summary and refund calculation in the left list widget."""
         self.currententry.clear()
+        self.currententry.addItem(f"Event: {data['name']}")
         
-        if not self.selected_registration_id:
-            return
-        
-        event_name = event_data.get('name', 'Event')
-        event_date_text = format_date_string(event_data.get('date'))
-        event_time = event_data.get('time') or ''
-        base_fee = float(event_data.get('base_fee', 0.0))
-        self.currententry.addItem(f"Event: {event_name}")
-        self.currententry.addItem(f"Event Date: {event_date_text} at {event_time}")
+        base_fee = float(data['base_fee']) if data['base_fee'] is not None else 0.0
         self.currententry.addItem(f"Base Fee: ₱{base_fee:.2f}")
         
-        # Get actual amount paid and registration details
         conn = get_db_connection()
         if conn:
             try:
@@ -5023,182 +5010,119 @@ class withdraw(QDialog):
                     WHERE registration_id = %s
                 """, (self.selected_registration_id,))
                 
-                result = cursor.fetchone()
-                if result:
-                    amount_paid = float(result[0]) if result[0] is not None else 0.0
-                    reg_date = format_date_string(result[1])
-                    payment_date = format_date_string(result[2])
+                res = cursor.fetchone()
+                if res:
+                    amount_paid = float(res[0]) if res[0] is not None else 0.0
+                    reg_date = format_date_string(res[1])
                     
-                    self.currententry.addItem("")  # Empty line
+                    self.currententry.addItem("")
                     self.currententry.addItem(f"Amount Paid: ₱{amount_paid:.2f}")
-                    self.currententry.addItem(f"Registration Date: {reg_date}")
-                    self.currententry.addItem(f"Payment Date: {payment_date}")
+                    self.currententry.addItem(f"Reg Date: {reg_date}")
                     
-                    # Calculate refund
-                    refund_info = self.calculate_refund(event_data.get('date'), amount_paid)
+                    # Calculate Refund
+                    refund_info = self.calculate_refund(data['date'], amount_paid)
                     
-                    self.currententry.addItem("")  # Empty line
+                    self.currententry.addItem("")
                     self.currententry.addItem("--- Refund Calculation ---")
                     self.currententry.addItem(f"Days until event: {refund_info['days_until']}")
-                    self.currententry.addItem(f"Refund Policy: {refund_info['refund_text']}")
-                    self.currententry.addItem("")  # Empty line
+                    self.currententry.addItem(f"Policy: {refund_info['refund_text']}")
+                    self.currententry.addItem("")
                     self.currententry.addItem(f"Refund Amount: ₱{refund_info['refund_amount']:.2f}")
                     
-                    # Update warning label
+                    # Update the yellow warning label
                     if refund_info['refund_amount'] > 0:
                         self.warningwithdrawal.setText(f"Refund: ₱{refund_info['refund_amount']:.2f} will be processed.")
                     else:
-                        self.warningwithdrawal.setText("No refund available (less than 4 days before event).")
-                else:
-                    self.currententry.addItem("Registration details not found")
+                        self.warningwithdrawal.setText("No refund available.")
             except Error as err:
-                print(f"Error loading registration details: {err}")
-                self.currententry.addItem(f"Error: {err}")
+                print(f"Error displaying refund: {err}")
             finally:
-                if conn:
-                    conn.close()
-        else:
-            self.currententry.addItem("Database connection failed")
-    
+                conn.close()
+
     def process_withdrawal(self):
-        """Handle the actual withdrawal and log it."""
-        if not self.petregiserr:
-            self.petregiserr = self.findChild(QtWidgets.QLabel, 'petregiserr')
+        """Execute withdrawal: delete entry, update status, log transaction."""
+        if self.petregiserr: self.petregiserr.setText('')
         
-        if self.petregiserr:
-            self.petregiserr.setText('')
-        
-        if not self.withdrawfrom.currentText():
-            if self.petregiserr:
-                self.petregiserr.setText('Please select a registration to withdraw.')
+        if not self.withdrawfrom.currentText() or not self.selected_registration_id:
+            if self.petregiserr: self.petregiserr.setText('Please select a registration.')
             return
         
-        selected_text = self.withdrawfrom.currentText()
-        if selected_text not in self.event_from_dict:
-            if self.petregiserr:
-                self.petregiserr.setText('Invalid registration selection.')
-            return
-        
-        event_data = self.event_from_dict[selected_text]
-        
-        # Get refund information
+        txt = self.withdrawfrom.currentText()
+        event_data = self.event_from_dict.get(txt)
+        if not event_data: return
+
         conn = get_db_connection()
         if conn:
             try:
                 cursor = conn.cursor()
                 
-                # Get current amount paid and event date
-                cursor.execute("""
-                    SELECT er.total_amount_paid, e.date
-                    FROM event_registration er
-                    JOIN events e ON er.event_id = e.event_id
-                    WHERE er.registration_id = %s
-                """, (self.selected_registration_id,))
+                # Re-fetch amount for logging
+                cursor.execute("SELECT total_amount_paid, event_id FROM event_registration WHERE registration_id = %s", (self.selected_registration_id,))
+                res = cursor.fetchone()
+                amount_paid = float(res[0]) if res else 0.0
                 
-                result = cursor.fetchone()
-                if not result:
-                    if self.petregiserr:
-                        self.petregiserr.setText('Registration not found.')
-                    conn.close()
-                    return
+                refund_info = self.calculate_refund(event_data['date'], amount_paid)
                 
-                amount_paid = float(result[0]) if result[0] is not None else 0.0
-                event_date = result[1]
-                
-                # Calculate refund
-                refund_info = self.calculate_refund(event_date, amount_paid)
-                
-                # Show confirmation dialog
+                # Confirmation Dialog
                 from PyQt6.QtWidgets import QMessageBox
-                confirmation_msg = f"Are you sure you want to withdraw from this event?\n\n"
-                confirmation_msg += f"Event: {event_data['name']}\n"
-                confirmation_msg += f"Date: {format_date_string(event_date)}\n"
-                confirmation_msg += f"Amount Paid: ₱{amount_paid:.2f}\n"
-                confirmation_msg += f"Refund: ₱{refund_info['refund_amount']:.2f}\n\n"
-                confirmation_msg += f"({refund_info['refund_text']})"
+                msg = (f"Are you sure you want to withdraw?\n\n"
+                       f"Event: {event_data['name']}\n"
+                       f"Refund: ₱{refund_info['refund_amount']:.2f}\n"
+                       f"({refund_info['refund_text']})")
                 
-                reply = QMessageBox.question(
-                    self, 
-                    'Confirm Withdrawal',
-                    confirmation_msg,
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                )
+                reply = QMessageBox.question(self, 'Confirm Withdrawal', msg, 
+                                           QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
                 
                 if reply != QMessageBox.StandardButton.Yes:
                     return
-                
-                # Delete pet_event_entry records first (to allow re-enrollment)
-                if hasattr(self, 'selected_pet_ids') and self.selected_pet_ids:
+
+                # 1. Delete pet entries
+                if self.selected_pet_ids:
                     for pet_id in self.selected_pet_ids:
-                        cursor.execute("""
-                            DELETE FROM pet_event_entry
-                            WHERE registration_id = %s AND pet_id = %s
-                        """, (self.selected_registration_id, pet_id))
+                        cursor.execute("DELETE FROM pet_event_entry WHERE registration_id = %s AND pet_id = %s", (self.selected_registration_id, pet_id))
                 
-                # Update registration status to Cancelled (keep record for audit, but mark as cancelled)
+                # 2. Update registration status
                 from datetime import datetime
                 now = datetime.now()
-                cancellation_date = now.strftime("%Y-%m-%d")
+                cancel_date = now.strftime("%Y-%m-%d")
                 
-                cursor.execute("""
-                    UPDATE event_registration
-                    SET status = %s, cancellation_date = %s
-                    WHERE registration_id = %s
-                """, ('Cancelled', cancellation_date, self.selected_registration_id))
+                cursor.execute("UPDATE event_registration SET status = 'Cancelled', cancellation_date = %s WHERE registration_id = %s", (cancel_date, self.selected_registration_id))
                 
-                # Log the cancellation
+                # 3. Log transaction
                 cursor.execute("SELECT MAX(log_id) FROM participation_log")
-                max_log_id = cursor.fetchone()[0]
-                new_log_id = (max_log_id if max_log_id is not None else 0) + 1
+                max_log = cursor.fetchone()[0]
+                new_log_id = (max_log if max_log is not None else 0) + 1
                 
                 action_date = now.strftime("%Y-%m-%d")
                 action_time = now.strftime("%H:%M:%S")
                 
                 cursor.execute("""
-                    INSERT INTO participation_log
-                    (log_id, registration_id, action_type, action_date, action_time,
+                    INSERT INTO participation_log 
+                    (log_id, registration_id, action_type, action_date, action_time, 
                      original_event_id, new_event_id, reason, refund_amount, top_up_amount)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 """, (new_log_id, self.selected_registration_id, 'Cancelled', action_date, action_time,
-                      event_data['event_id'], None, 'Owner withdrew from event', 
-                      refund_info['refund_amount'], 0.00))
+                      event_data['event_id'], None, 'Owner withdrew', refund_info['refund_amount'], 0.00))
                 
                 conn.commit()
                 
                 if self.petregiserr:
-                    refund_amt = refund_info['refund_amount']
-                    self.petregiserr.setText(f"Withdrawal successful! Refund: ₱{refund_amt:.2f}")
-                print(f"Successfully withdrew registration {self.selected_registration_id} from event {event_data['event_id']}")
+                    self.petregiserr.setText(f"Withdrawal complete. Refund: ₱{refund_info['refund_amount']:.2f}")
                 
-                # Reload enrolled events to reflect the withdrawal
+                # Refresh UI
                 self.load_enrolled_events()
                 self.currententry.clear()
-                if self.warningwithdrawal:
-                    self.warningwithdrawal.setText('Withdrawal completed.')
+                self.petandowner.clear()
+                self.warningwithdrawal.setText('Withdrawal completed.')
                 
             except Error as err:
-                print(f"Database UPDATE Error (Withdrawal): {err}")
-                if conn:
-                    conn.rollback()
-                if self.petregiserr:
-                    self.petregiserr.setText('Withdrawal failed: Database Error.')
-            except Exception as e:
-                print(f"Unexpected Error during withdrawal: {e}")
-                if conn:
-                    conn.rollback()
-                if self.petregiserr:
-                    self.petregiserr.setText('An unexpected error occurred.')
+                print(f"Withdrawal error: {err}")
+                if conn: conn.rollback()
+                if self.petregiserr: self.petregiserr.setText('Withdrawal failed.')
             finally:
-                if conn:
-                    conn.close()
+                conn.close()
         else:
-            if self.petregiserr:
-                self.petregiserr.setText('Database connection failed.')
-
-    def gotoentries(self):
-        entrs = entries()
-        widget.addWidget(entrs)
-        widget.setCurrentIndex(widget.currentIndex() + 1)
+            if self.petregiserr: self.petregiserr.setText('Database connection failed.')
 
 # --------------------------------------------------------------------------------------------------------------------
 

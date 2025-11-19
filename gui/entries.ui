@@ -106,7 +106,7 @@ background-color: rgb(255, 255, 255);</string>
   <widget class="QPushButton" name="entriestexitbutt">
    <property name="geometry">
     <rect>
-     <x>430</x>
+     <x>570</x>
      <y>700</y>
      <width>101</width>
      <height>31</height>
@@ -130,9 +130,8 @@ font: 900 10pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
 border-radius: 10px;}
 
 QWidget#entriestexitbutt:hover {
-    
     background-color: rgb(238, 223, 146); 
-    border: 2px solid #388E3C; 
+    border: 2px solid #388E3C;
     padding: 8px 20px; 
     font-size: 12px; 
 }</string>
@@ -177,7 +176,7 @@ background-color: rgb(255, 255, 255);</string>
     </rect>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;;
 color: rgb(40, 52, 84);
 background-color: rgb(255, 255, 255);</string>
    </property>
@@ -192,85 +191,9 @@ background-color: rgb(255, 255, 255);</string>
     </rect>
    </property>
    <property name="styleSheet">
-    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;; 
+    <string notr="true">font: 700 10pt &quot;Berlin Sans FB Demi&quot;;
 color: rgb(40, 52, 84);
 background-color: rgb(255, 255, 255);</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="transferbutt">
-   <property name="geometry">
-    <rect>
-     <x>560</x>
-     <y>700</y>
-     <width>141</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Arial Black</family>
-     <pointsize>10</pointsize>
-     <italic>false</italic>
-     <bold>true</bold>
-    </font>
-   </property>
-   <property name="cursor">
-    <cursorShape>PointingHandCursor</cursorShape>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">QWidget#transferbutt{
-background-color: rgb(251, 176, 59);
-font: 900 10pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
-border-radius: 10px;}
-
-QWidget#veventexitbutt:hover {
-    
-    background-color: rgb(238, 223, 146); 
-    border: 2px solid #388E3C; 
-    padding: 8px 20px; 
-    font-size: 12px; 
-}</string>
-   </property>
-   <property name="text">
-    <string>Transfer</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="withdrawbutt">
-   <property name="geometry">
-    <rect>
-     <x>730</x>
-     <y>700</y>
-     <width>121</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Arial Black</family>
-     <pointsize>10</pointsize>
-     <italic>false</italic>
-     <bold>true</bold>
-    </font>
-   </property>
-   <property name="cursor">
-    <cursorShape>PointingHandCursor</cursorShape>
-   </property>
-   <property name="styleSheet">
-    <string notr="true">QWidget#withdrawbutt{
-background-color: rgb(251, 176, 59);
-font: 900 10pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
-border-radius: 10px;}
-
-QWidget#withdrawbutt:hover {
-    
-    background-color: rgb(238, 223, 146); 
-    border: 2px solid #388E3C; 
-    padding: 8px 20px; 
-    font-size: 12px; 
-}</string>
-   </property>
-   <property name="text">
-    <string>Withdraw</string>
    </property>
   </widget>
   <zorder>label</zorder>
@@ -280,8 +203,6 @@ QWidget#withdrawbutt:hover {
   <zorder>label_2</zorder>
   <zorder>vieweventsel</zorder>
   <zorder>eventdate</zorder>
-  <zorder>transferbutt</zorder>
-  <zorder>withdrawbutt</zorder>
   <zorder>eventsparticipants</zorder>
  </widget>
  <resources/>
