@@ -1619,9 +1619,16 @@ class awardpetscore(QDialog):
         self.petexitbutt.clicked.connect(self.gotoadminmenu)
         self.savebutt.clicked.connect(self.save_score_and_award)
         self.message = self.findChild(QtWidgets.QLabel, 'message')
+        self.editawardsbutt = self.findChild(QtWidgets.QPushButton, 'editawardsbutt')
+        if self.editawardsbutt:
+            self.editawardsbutt.clicked.connect(self.open_edit_awards)
         
         # Load events and awards
         self.load_events()
+        
+        # track currently selected event
+        self.current_event_id = None
+        self.current_event_is_placement = False
         
         # Connect event selection to load pets and display data
         self.pastevents.currentIndexChanged.connect(self.on_event_selected)
@@ -2056,6 +2063,21 @@ class awardpetscore(QDialog):
             if conn:
                 conn.close()
                 
+    def open_edit_awards(self):
+        if not getattr(self, "current_event_id", None):
+            if self.message:
+                self.message.setText("Please select an event first.")
+            return
+
+        edit_screen = EditAwardsDialog(self.current_event_id)   # no parent needed
+        widget.addWidget(edit_screen)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+        
+        # after closing, reload awards for current event
+        if self.current_event_id:
+            self.load_awards(self.current_event_id)
+
+                
     def update_selected_pet_score(self):
         ev_text = self.pastevents.currentText()
         pt_text = self.petswhoparticipated.currentText()
@@ -2112,6 +2134,211 @@ class awardpetscore(QDialog):
         
 # --------------------------------------------------------------------------------------------------------------------
 
+class EditAwardsDialog(QDialog):
+    def __init__(self, event_id=None, parent=None):
+        super(EditAwardsDialog, self).__init__(parent)
+        loadUi('./gui/editawards.ui', self)
+
+        self.event_id = event_id
+        self.msglabel.setText("")
+
+        self.modecombo.addItems(["Add special award", "Delete special award"])
+        self.modecombo.currentIndexChanged.connect(self.on_mode_changed)
+
+        self.eventcombo.currentIndexChanged.connect(self.on_event_changed)
+        self.savebutton.clicked.connect(self.add_award)
+        self.deletebutton.clicked.connect(self.delete_award)
+        self.exitbutton.clicked.connect(self.go_back)
+
+        self.load_events()
+        if self.event_id:
+            # preselect event if opened from Assign screen
+            self.select_event_by_id(self.event_id)
+
+        self.on_mode_changed()
+        
+    def go_back(self):
+        # Simple: go back one screen in the stack
+        current = widget.currentIndex()
+        if current > 0:
+            widget.setCurrentIndex(current - 1)
+        # Optionally remove this screen so the stack doesn't grow forever
+        widget.removeWidget(self)
+
+
+    def load_events(self):
+        conn = get_db_connection()
+        if not conn:
+            return
+        try:
+            cur = conn.cursor()
+            cur.execute("""SELECT DISTINCT e.event_id, e.name 
+                        FROM events e
+                        JOIN awards a ON e.event_id = a.event_id
+                        WHERE a.is_special = 1
+                        ORDER BY e.event_id""")
+            self.eventcombo.clear()
+            self.eventcombo.addItem("Select event", None)
+            for eid, name in cur.fetchall():
+                self.eventcombo.addItem(f"{name} (ID: {eid})", eid)
+        finally:
+            conn.close()
+
+    def select_event_by_id(self, event_id):
+        for i in range(self.eventcombo.count()):
+            if self.eventcombo.itemData(i) == event_id:
+                self.eventcombo.setCurrentIndex(i)
+                return
+
+    def on_event_changed(self, idx):
+        self.event_id = self.eventcombo.itemData(idx)
+        self.load_awards_for_event()
+
+    def load_awards_for_event(self):
+        self.awardstable.clear()
+        self.deleteawardcombo.clear()
+        if not self.event_id:
+            return
+        conn = get_db_connection()
+        if not conn:
+            return
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT a.award_id, a.award_name, a.is_special, p.name
+                FROM awards a
+                LEFT JOIN pets p ON a.pet_id = p.pet_id
+                WHERE event_id = %s
+                ORDER BY is_special DESC, award_name
+            """, (self.event_id,))
+            rows = cur.fetchall()
+        # simple table: id, name, type, assigned_to
+            self.awardstable.setColumnCount(4)
+            self.awardstable.setHorizontalHeaderLabels(
+                ["ID", "Award name", "Type", "Winner"]
+            )
+            self.awardstable.setRowCount(len(rows))
+            for r, (aid, name, is_special, pet_id) in enumerate(rows):
+                vals = [aid, name,
+                        "Special" if is_special else "Placement",
+                        pet_id if pet_id is not None else "None"]
+                for c, v in enumerate(vals):
+                    item = QtWidgets.QTableWidgetItem(str(v))
+                    self.awardstable.setItem(r, c, item)
+                # populate delete dropdown only with unassigned special awards
+                if is_special and pet_id is None:
+                    self.deleteawardcombo.addItem(name, aid)
+                    
+                # If there are no unassigned special awards, show a placeholder
+                if self.deleteawardcombo.count() == 0:
+                    self.deleteawardcombo.addItem("No valid awards are available for deletion", None)
+                    self.deletebutton.setEnabled(False)
+                else:
+                    if (self.deleteawardcombo.count() > 1 and
+                        self.deleteawardcombo.itemData(0) is None):
+                        self.deleteawardcombo.removeItem(0)
+                    self.deletebutton.setEnabled(True)
+                    
+                # After filling rows in awardstable
+                self.awardstable.setWordWrap(True)
+
+                header = self.awardstable.horizontalHeader()
+                if header:
+                    # ID narrow, Award name wide, Type and pet_id narrow
+                    header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+                    header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Stretch)
+                    header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+                    header.setSectionResizeMode(3, QtWidgets.QHeaderView.ResizeMode.Interactive)
+                    self.awardstable.setColumnWidth(3, 150)
+
+                vheader = self.awardstable.verticalHeader()
+                if vheader:
+                    vheader.setVisible(False)
+                    vheader.setDefaultSectionSize(32)
+
+        finally:
+            conn.close()
+
+    def on_mode_changed(self, index=None):
+        mode = self.modecombo.currentText()
+        adding = "Add" in mode
+        self.newawardname.setVisible(adding)
+        self.savebutton.setVisible(adding)
+        self.deleteawardcombo.setVisible(not adding)
+        self.deletebutton.setVisible(not adding)
+            
+    def add_award(self):
+        name = self.newawardname.text().strip()
+        if not self.event_id or not name:
+            self.msglabel.setText("Select an event and enter award name.")
+            return
+        conn = get_db_connection()
+        if not conn:
+            self.msglabel.setText("DB error.")
+            return
+        try:
+            cur = conn.cursor()
+            # prevent duplicate unassigned special award names
+            cur.execute("""
+                SELECT COUNT(*)
+                FROM awards
+                WHERE event_id = %s AND is_special = 1
+                  AND award_name = %s AND pet_id IS NULL
+            """, (self.event_id, name))
+            if cur.fetchone()[0] > 0:
+                self.msglabel.setText("Award already exists for this event.")
+                return
+
+            cur.execute("SELECT COALESCE(MAX(award_id), 0) + 1 FROM awards")
+            self.next_id = cur.fetchone()[0]
+            
+            cur.execute("""
+                INSERT INTO awards (award_id, pet_id, is_special, award_name, description, date, event_id)
+                VALUES (%s, NULL, 1, %s, %s, CURDATE(), %s)
+            """, (self.next_id, name, f"Special award: {name}", self.event_id))
+            conn.commit()
+            self.msglabel.setText("Special award created.")
+            self.newawardname.clear()
+            self.load_awards_for_event()
+        except Error as err:
+            print("add_award error:", err)
+            conn.rollback()
+            self.msglabel.setText("Error creating award.")
+        finally:
+            conn.close()
+
+    def delete_award(self):
+        if not self.event_id:
+            self.msglabel.setText("Select an event first.")
+            return
+        idx = self.deleteawardcombo.currentIndex()
+        award_id = self.deleteawardcombo.itemData(idx)
+        if not award_id:
+            self.msglabel.setText("Select an unassigned special award to delete.")
+            return
+        conn = get_db_connection()
+        if not conn:
+            self.msglabel.setText("DB error.")
+            return
+        try:
+            cur = conn.cursor()
+            # only delete if still unassigned
+            cur.execute("""
+                DELETE FROM awards
+                WHERE award_id = %s AND event_id = %s
+                  AND is_special = 1 AND pet_id IS NULL
+            """, (award_id, self.event_id))
+            conn.commit()
+            self.msglabel.setText("Award deleted.")
+            self.load_awards_for_event()
+        except Error as err:
+            print("delete_award error:", err)
+            conn.rollback()
+            self.msglabel.setText("Error deleting award.")
+        finally:
+            conn.close()
+
+# --------------------------------------------------------------------------------------------------------------------
 class mainmenu(QDialog):
     def __init__(self, owner_context=None):
         super(mainmenu, self).__init__()
