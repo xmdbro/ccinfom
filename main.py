@@ -1461,7 +1461,9 @@ class participantlog(QDialog):
         self.filter_action.currentIndexChanged.connect(self.load_participation_log)
 
         self.owerrormes = self.findChild(QtWidgets.QLabel, 'owerrormes')
-        
+    
+        self.logsummary = self.findChild(QtWidgets.QLabel, 'logsummary')
+
         # Load filters and initial data
         self.load_filter_options()
         self.load_participation_log()
@@ -1558,14 +1560,23 @@ class participantlog(QDialog):
             
             cursor.execute(query, tuple(params))
             logs = cursor.fetchall()
-            
-            # Set up table
-            self.participantlog.setRowCount(len(logs))
-            self.participantlog.setColumnCount(10)
-            self.participantlog.setHorizontalHeaderLabels([
-                'Log ID', 'Owner Name', 'Action Type', 'Action Date', 'Action Time',
-                'Original Event', 'New Event', 'Reason', 'Refund Amount', 'Top Up Amount'
-            ])
+
+            # Update the Summary Label
+            count = len(logs)
+            if self.logsummary:
+                # Determine the text to display based on filters
+                display_action = action_text if action_text and action_text != "All Actions" else "Total"
+                
+                if count > 0:
+                    if display_action == "Total":
+                         self.logsummary.setText(f"Total logs found: {count}")
+                    else:
+                         self.logsummary.setText(f"Total '{display_action}' logs found: {count}")
+                else:
+                    if display_action == "Total":
+                        self.logsummary.setText("No logs found.")
+                    else:
+                        self.logsummary.setText(f"No '{display_action}' logs found.")
             
             # Set up table
             self.participantlog.setRowCount(len(logs))
