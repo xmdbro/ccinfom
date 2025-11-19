@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QDialog, QApplication, QWidget, QStackedWidget
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'Dlsu1234!',
+    'password': 'mkaybye2112.',
     'database': 'pet_show'
 }
 
@@ -805,7 +805,10 @@ class adminmenu(QDialog):
         self.viewattenbuttt.clicked.connect(self.gotoviewatten)
         self.viewpartbutt.clicked.connect(self.gotopartlog)
         self.assscoresawpetbutt.clicked.connect(self.gotoawpetscore)
-        
+        self.removeownerbutt = self.findChild(QtWidgets.QPushButton, "removeownerbutt")
+        if self.removeownerbutt:
+            self.removeownerbutt.clicked.connect(self.goto_remove_owner_data)
+            
         # Load event status table
         self.load_eventstatus()
 
@@ -839,6 +842,11 @@ class adminmenu(QDialog):
         widget.addWidget(prtlg)
         widget.setCurrentIndex(widget.currentIndex() + 1)
     
+    def goto_remove_owner_data(self):
+        screen = RemoveOwnerDialog()
+        widget.addWidget(screen)
+        widget.setCurrentIndex(widget.currentIndex() + 1)
+
     def load_eventstatus(self):
         """Load event status with awarded pets info into the table."""
         conn = get_db_connection()
@@ -2143,6 +2151,159 @@ class awardpetscore(QDialog):
         widget.addWidget(admmn)
         widget.setCurrentIndex(widget.currentIndex() + 1)
         
+# --------------------------------------------------------------------------------------------------------------------
+
+class RemoveOwnerDialog(QDialog):
+    def __init__(self, parent=None):
+        super(RemoveOwnerDialog, self).__init__(parent)
+        loadUi('./gui/removeowner.ui', self)
+
+        self.deleteownerbutt.clicked.connect(self.delete_owner)
+        self.exitbutton.clicked.connect(self.go_back)
+
+        self.load_owners()
+
+    def load_owners(self):
+        conn = get_db_connection()
+        if not conn:
+            return
+        try:
+            cur = conn.cursor()
+            # owners with pet count
+            cur.execute("""
+                SELECT o.owner_id,
+                       o.first_name,
+                       o.last_name,
+                       COUNT(p.pet_id) AS pet_count
+                FROM owners o
+                LEFT JOIN pets p ON p.owner_id = o.owner_id
+                GROUP BY o.owner_id, o.first_name, o.last_name
+                ORDER BY o.owner_id
+            """)
+            rows = cur.fetchall()
+
+            # configure table: ID | First name | Last name | Pet count
+            self.ownerstable.setColumnCount(4)
+            self.ownerstable.setHorizontalHeaderLabels(
+                ["ID", "First name", "Last name", "Pet count"]
+            )
+            self.ownerstable.setRowCount(len(rows))
+            self.ownercombo.clear()
+            self.ownercombo.addItem("Select owner to delete", None)
+
+            for r, (oid, fn, ln, email) in enumerate(rows):
+                values = [oid, fn, ln, email]
+                for c, v in enumerate(values):
+                    item = QtWidgets.QTableWidgetItem(str(v))
+                    self.ownerstable.setItem(r, c, item)
+                self.ownercombo.addItem(f"{ln}, {fn} (ID: {oid})", oid)
+        finally:
+            conn.close()
+
+    def delete_owner(self):
+        idx = self.ownercombo.currentIndex()
+        owner_id = self.ownercombo.itemData(idx)
+
+        self.msglabel.setText("")
+
+        if not owner_id:
+            self.msglabel.setText("Please select an owner to delete.")
+            return
+
+        conn = get_db_connection()
+        if not conn:
+            self.msglabel.setText("Database connection failed.")
+            return
+
+        try:
+            cur = conn.cursor()
+
+            # 1) Collect this owner's pets and registrations
+            cur.execute("SELECT pet_id FROM pets WHERE owner_id = %s", (owner_id,))
+            pet_ids = [row[0] for row in cur.fetchall()]
+
+            cur.execute("SELECT registration_id FROM event_registration WHERE owner_id = %s",
+                        (owner_id,))
+            reg_ids = [row[0] for row in cur.fetchall()]
+
+            # 2) If there are pets, delete everything that points to those pets
+            if pet_ids:
+                pet_placeholders = ",".join(["%s"] * len(pet_ids))
+
+                # pet_breed_junction
+                cur.execute(
+                    f"DELETE FROM pet_breed_junction WHERE pet_id IN ({pet_placeholders})",
+                    pet_ids
+                )
+
+                # awards tied to these pets
+                cur.execute(
+                    f"DELETE FROM awards WHERE pet_id IN ({pet_placeholders})",
+                    pet_ids
+                )
+
+                # pet_event_entry rows by pet
+                cur.execute(
+                    f"DELETE FROM pet_event_entry WHERE pet_id IN ({pet_placeholders})",
+                    pet_ids
+                )
+
+            # 3) If there are registrations, delete their logs and entries, then the regs
+            if reg_ids:
+                reg_placeholders = ",".join(["%s"] * len(reg_ids))
+
+                # participation_log
+                cur.execute(
+                    f"DELETE FROM participation_log "
+                    f"WHERE registration_id IN ({reg_placeholders})",
+                    reg_ids
+                )
+
+                # pet_event_entry rows by registration
+                cur.execute(
+                    f"DELETE FROM pet_event_entry "
+                    f"WHERE registration_id IN ({reg_placeholders})",
+                    reg_ids
+                )
+
+                # event_registration rows themselves
+                cur.execute(
+                    f"DELETE FROM event_registration "
+                    f"WHERE registration_id IN ({reg_placeholders})",
+                    reg_ids
+                )
+
+            # 4) Delete the pets themselves
+            if pet_ids:
+                pet_placeholders = ",".join(["%s"] * len(pet_ids))
+                cur.execute(
+                    f"DELETE FROM pets WHERE pet_id IN ({pet_placeholders})",
+                    pet_ids
+                )
+                
+            # 4.5) delete any owner_log entries for this owner
+            cur.execute("DELETE FROM owner_log WHERE owner_id = %s", (owner_id,))
+
+            # 5) Finally, delete the owner record
+            cur.execute("DELETE FROM owners WHERE owner_id = %s", (owner_id,))
+
+            conn.commit()
+            self.msglabel.setText("Owner and all related data removed.")
+            self.load_owners()  # refresh table + dropdown
+
+        except Error as err:
+            print("Owner cascade delete error:", err)
+            conn.rollback()
+            self.msglabel.setText("Error deleting owner; no changes were saved.")
+        finally:
+            conn.close()
+
+    def go_back(self):
+        current = widget.currentIndex()
+        widget.setCurrentIndex(current - 1)
+        widget.removeWidget(self)
+
+
 # --------------------------------------------------------------------------------------------------------------------
 
 class EditAwardsDialog(QDialog):

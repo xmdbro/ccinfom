@@ -174,11 +174,41 @@ QWidget#viewpartbutt:hover {
     <string>View Participation Log</string>
    </property>
   </widget>
+    <widget class="QPushButton" name="removeownerbutt">
+   <property name="geometry">
+    <rect>
+     <x>940</x>
+     <y>610</y>
+     <width>291</width>
+     <height>61</height>
+    </rect>
+   </property>
+   <property name="cursor">
+    <cursorShape>PointingHandCursor</cursorShape>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QWidget#removeownerbutt{
+background-color: rgb(251, 176, 59);
+font: 900 12pt &quot;Arial Black&quot;; color : rgb(255, 255, 255);
+border-radius: 10px;}
+
+QWidget#removeownerbutt:hover {
+
+    background-color:rgb(238, 223, 146);
+    border: 2px solid #388E3C;
+    padding: 10px 20px;
+    font-size: 15px;
+}</string>
+   </property>
+   <property name="text">
+    <string>Remove Owner Data</string>
+   </property>
+  </widget>
   <widget class="QPushButton" name="mmexitbutt">
    <property name="geometry">
     <rect>
      <x>1010</x>
-     <y>610</y>
+     <y>700</y>
      <width>151</width>
      <height>41</height>
     </rect>
