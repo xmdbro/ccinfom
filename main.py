@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QDialog, QApplication, QWidget, QStackedWidget
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
-    'password': 'mkaybye2112.',
+    'password': 'Dlsu1234!',
     'database': 'pet_show'
 }
 
@@ -1315,7 +1315,7 @@ class eventattendancerep(QDialog):
         self.eventawards.currentIndexChanged.connect(self.load_attendance_data)
         self.eventawards_2.currentIndexChanged.connect(self.load_attendance_data)
         
-        # Load initial data
+        # Load initial data (Defaults to All/All)
         self.load_attendance_data()
     
     def load_events(self):
@@ -1334,7 +1334,8 @@ class eventattendancerep(QDialog):
             
             events = cursor.fetchall()
             self.eventawards.clear()
-            self.eventawards.addItem("Select Event")
+            # Default to All Events
+            self.eventawards.addItem("All Events")
             
             for event_id, event_name in events:
                 display_text = f"{event_name} (ID: {event_id})"
@@ -1348,30 +1349,14 @@ class eventattendancerep(QDialog):
     def load_attendance_statuses(self):
         """Load all possible attendance statuses into the second dropdown."""
         self.eventawards_2.clear()
-        self.eventawards_2.addItem("Select Status")
+        # Default to All Statuses
+        self.eventawards_2.addItem("All Statuses")
         self.eventawards_2.addItem("Present")
         self.eventawards_2.addItem("No Show")
         self.eventawards_2.addItem("Registered")
     
     def load_attendance_data(self):
-        """Load attendance data based on selected event and status."""
-        # Check if both dropdowns have valid selections
-        event_text = self.eventawards.currentText()
-        status_text = self.eventawards_2.currentText()
-        
-        if event_text == "Select Event" or status_text == "Select Status":
-            self.eventawardsstatus.setRowCount(0)
-            self.totalpetmess.setText('')
-            return
-        
-        # Extract event_id from the display text
-        try:
-            event_id = int(event_text.split('(ID: ')[1].split(')')[0])
-        except:
-            self.eventawardsstatus.setRowCount(0)
-            self.totalpetmess.setText('Invalid event selection.')
-            return
-        
+        """Load attendance data dynamically based on filters."""
         conn = get_db_connection()
         if not conn:
             return
@@ -1379,35 +1364,52 @@ class eventattendancerep(QDialog):
         try:
             cursor = conn.cursor()
             
-            # Query to get attendance data with total count and owner name
+            # Base Query: Links Entry -> Pet -> Owner
             query = """
                 SELECT t1.entry_id,
                        p.pet_id,
                        p.name AS pet_name,
                        CONCAT(o.first_name, ' ', o.last_name) AS owner_name,
-                       t1.attendance_status,
-                       (SELECT COUNT(t2.entry_id)
-                        FROM pet_event_entry t2
-                        WHERE t2.event_id = t1.event_id
-                        AND t2.attendance_status = %s) AS total_status_count
+                       t1.attendance_status
                 FROM pet_event_entry t1
                 JOIN pets p ON t1.pet_id = p.pet_id
                 JOIN owners o ON p.owner_id = o.owner_id
-                WHERE t1.event_id = %s
-                AND t1.attendance_status = %s
+                WHERE 1=1
             """
             
-            cursor.execute(query, (status_text, event_id, status_text))
+            params = []
+            
+            # Apply Event Filter
+            event_text = self.eventawards.currentText()
+            if event_text and event_text != "All Events":
+                try:
+                    event_id = int(event_text.split('(ID: ')[1].split(')')[0])
+                    query += " AND t1.event_id = %s"
+                    params.append(event_id)
+                except:
+                    pass # Ignore parse error, show all
+            
+            # Apply Status Filter
+            status_text = self.eventawards_2.currentText()
+            if status_text and status_text != "All Statuses":
+                query += " AND t1.attendance_status = %s"
+                params.append(status_text)
+            
+            # Order by Entry ID
+            query += " ORDER BY t1.entry_id"
+            
+            cursor.execute(query, tuple(params))
             results = cursor.fetchall()
             
+            total_count = len(results)
+            
             # Set up table
-            self.eventawardsstatus.setRowCount(len(results))
+            self.eventawardsstatus.setRowCount(total_count)
             self.eventawardsstatus.setColumnCount(6)
             self.eventawardsstatus.setHorizontalHeaderLabels([
                 'Entry ID', 'Pet ID', 'Pet Name', 'Owner Name', 'Attendance Status', 'Total Count'
             ])
             
-            total_count = 0
             # Populate table
             for row, data in enumerate(results):
                 entry_id = data[0]
@@ -1415,29 +1417,29 @@ class eventattendancerep(QDialog):
                 pet_name = data[2] or 'Unknown'
                 owner_name = data[3] or 'Unknown'
                 attendance_status = data[4] or 'Unknown'
-                total_status_count = data[5] or 0
                 
-                if row == 0:
-                    total_count = total_status_count
+                values = [str(entry_id), str(pet_id), pet_name, owner_name, attendance_status, str(total_count)]
                 
-                values = [str(entry_id), str(pet_id), pet_name, owner_name, attendance_status, str(total_status_count)]
                 for col, value in enumerate(values):
                     item = QtWidgets.QTableWidgetItem(str(value))
-                    if col in [2, 3, 4]:  # Pet Name, Owner Name, Attendance Status
+                    if col in [2, 3, 4]:  # Pet Name, Owner Name, Status
                         item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignVCenter)
                     self.eventawardsstatus.setItem(row, col, item)
             
-            # Update total pets message
+            # Update the top summary label
             if total_count > 0:
-                self.totalpetmess.setText(f'Total pets with {status_text} status: {total_count}')
+                if status_text == "All Statuses":
+                    self.totalpetmess.setText(f'Total pets found: {total_count}')
+                else:
+                    self.totalpetmess.setText(f'Total pets with {status_text} status: {total_count}')
             else:
-                self.totalpetmess.setText(f'No pets found with {status_text} status for this event.')
+                self.totalpetmess.setText('No pets found for the selected criteria.')
             
             # Make table look good
             self.eventawardsstatus.setWordWrap(True)
+            self.eventawardsstatus.resizeColumnsToContents()
             header = self.eventawardsstatus.horizontalHeader()
             if header:
-                # Use stretch mode to fill the widget initially, still allows manual resizing
                 header.setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
             vheader = self.eventawardsstatus.verticalHeader()
             if vheader:
